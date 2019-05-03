@@ -1,0 +1,33 @@
+from fractions import Fraction
+
+from ymxFirstFunc import first_op
+from ymxSecondFunc import second_op
+
+def to_integer(num):
+    num = int(num)
+    return num
+
+print('Welcome to the y = mx + b calculator 2.0! NOTE: IF THERE IS A DIVIDE BY ZERO ERROR, THE PROGAM WILL CRASH! ')
+while True:
+    try:
+        start_op = input('\nPlease enter \'1\' for a slope and a point, or \'2\' for two points!: ')
+    except (NameError, SyntaxError):
+        print('Please enter a number!')
+        continue
+    if start_op == 1:
+        finished_c = first_op()
+        if finished_c == False:
+            continue
+        else:
+            continue
+
+    elif start_op == 2:
+        finished_c = second_op()
+        if finished_c == False:
+            continue
+        else:
+            continue
+
+    else:
+        print('Please answer with \'1\' or \'2\'!')
+        continue

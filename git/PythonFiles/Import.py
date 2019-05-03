@@ -1,0 +1,2 @@
+import Cows
+Cows.cows()
