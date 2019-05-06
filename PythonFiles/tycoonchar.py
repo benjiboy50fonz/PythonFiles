@@ -28,7 +28,6 @@ def dsSelect(dealerships):
     tp2 = tp1[1]
     # Returns total price.
     return tp2, tp1
-    
 
 class Character():
     
@@ -38,7 +37,10 @@ class Character():
         product_types = []
         self.gender = gender
 
-        self.totalVehicles = {'coupe':10}
+        self.employeeWage = 75
+        self.employeeAnger = 0
+
+        self.totalVehicles = {'coupe':1000}
 
         self.companySize = 0 # The score
         
@@ -75,20 +77,180 @@ class Character():
 
 ### ADD VEHICLES
 
-    def endTurn(self):
+    def changeEmployeeWage(self, val=75):
+        self.employeeWage = val
+        if val > self.employeeWage:
+            self.employeeAnger = 1
+        self.employeeAnger = (75 - self.employeeWage) * 1.3
+        # Put this out of 100
+
+
+    # FIX UPDATING
+    def changeVehicleCost(self, repeat=False):
+        if repeat:
+            pass
+        else:
+            print('\n--- Logging Onto Server --- \n')
+        if len(self.totalVehicles) == 0:
+            print('You have no vehicles!')
+            print('\n--- Logging Off server ---\n')
+            return
+        else:
+            count = 1
+            available = []
+            for x in self.totalVehicles.items():
+                if x[1] > 0:
+                    available.append(x[0])
+                    
+            for i in self.tierOneVehicles:
+                if i[0] in available:
+                    print('\nVehicles in Stock: \n')
+                    print(str(count) + '. ' + i[0] + '  :  $' + str(i[3]) + '\n')
+                    count += 1
+            notInt = True
+            while notInt:
+                try:
+                    choice = int(input('Please enter the number next to the desired vehicle, or type \'cancel\' to exit: '))
+                except(ValueError):
+                    if str(choice.lower()) == 'cancel':
+                        print('\n--- Logging Off Server ---\n')
+                        return
+                    print('\nPlease enter a number!\n')
+                    continue
+                try:
+                    vehicleNames = list(self.totalVehicles.keys())
+                    vehicleName = vehicleNames[choice - 1]
+                except(IndexError):
+                    print(str(vehicleNames))
+                    print(str(choice))
+                    print('\nPlease enter a number within the range!\n')
+                    continue
+
+                newPrice = input('What would you like to change the price of the ' + str(vehicleName) + ' to?: ')    
+                for set_ in self.tierOneVehicles:
+                    if vehicleName in set_[0]:
+                        original = set_[3]
+                        set_ = list(set_)
+                        set_[3] = newPrice
+                        set_ = tuple(set_)
+                        print('\nThe price for the ' + str(set_[0]) + ' was successfully changed to $' + str(set_[3]) + \
+                              ' from $' + str(original) + '!\n')
+                        unclear = True
+                        while unclear:
+                            again = input('Change another value?: ')
+                            if str(again.lower()) == 'yes':
+                                self.changeVehicleCost(True)
+                            elif str(again.lower()) == 'no':
+                                print('\n--- Logging Off Server --- \n')
+                            else:
+                                print('\nPlease enter \'yes\' or \'no\'!\n')
+                                continue
+                    else:
+                        continue
+
+                
+                
+    def calcLosses(self):
+        from random import randint
+
+        # Runs employee payments
+        totalEmployees = 0
+        for i in self.dealerships:
+            totalEmployees += i[0]
+
+        totalEmployeeExpenses = self.employeeWage * totalEmployees
+
+        totalEmployeeLosses = 0
+        
+        # Calculates people who quit. 
+        for i in self.dealerships:
+            chance = randint(self.employeeAnger, 100)
+            if chance == 99:
+                i[0] -= 1
+                totalEmployeeLosses += 1
+                # Employee quits
+
+        # Calculates robbery.
+        robbed = False
+        losses = 0
+        robbedChek = False
+        robbedLocations = []
+        for i in self.dealerships:
+            if i[2] == 'C':
+                robbery = 10
+            elif i[2] == 'B':
+                robbery = 6
+            else:
+                robbery = 2
+
+            chance = randint(robbery, 100)
+            if chance == 99:
+                robbed = True
+                robbedChek = True
+                robbedLocations.append(str(i[5]))
+                losses += i[3] * 0.5
+            else:
+                if robbedChek:
+                    pass
+                else:
+                    robbed = False
+
+        # Does the same for the properties
+        robbedP = False
+        lossesP = 0
+        robbedLocationsP = []
+        robbedCheck = False
+        for i in self.properties:
+            robbery = i[1]
+            chance = randint(robbery, robbery * i[1])
+            if chance == robbery + 1:
+                robbedP = True
+                robbedCheck = True
+                robbedPLocationsP.append(str(i[5]))
+                lossesP += i[1] * 0.05
+            else:
+                if robbedCheck:
+                    pass
+                else:
+                    robbedP = False
+
+        # Combines the two.
+        if robbedP or robbed:
+            finalRob = True
+            totalRobberyLosses = lossesP + losses
+            robbedFinalLocations = list(robbedLocations + robbedLocationsP)
+        else:
+            totalRobberyLosses = 0
+            robbedFinalLocations = []
+            finalRob = False
+            
+
+        # Calculates taxes.
+        dealershipTotalTax = 0
+        for i in self.dealerships:
+            dealershipTotalTax += int(i[4])
+
+        propertyTotalTax = 0
+        for i in self.properties:
+            propertyTotalTax += int(i[4])
+
+        totalTax = propertyTotalTax + dealershipTotalTax
+
+        #Sums it all up
+        totalLosses = totalEmployeeExpenses + totalRobberyLosses + totalTax
+        robberyStats = [totalRobberyLosses, robbedFinalLocations]
+
+        self.money -= totalLosses
+        return totalLosses, totalTax, totalEmployeeExpenses, robberyStats, totalEmployeeLosses
+        
+    def getSales(self):
         from random import randint
 
         import collections
         
-        print('ds ' + str(self.dealerships))
-        print('p ' + str(self.properties))
-
         totalSurroundingBuyers = 0
         locationPurchases = {}
 
-
-        # REMOVE
-        self.dealerships = [(33, 356838, 'A', 252, 1045, 'Ben\'s Cars')]
 
         totalEarnings = 0
 
@@ -98,75 +260,74 @@ class Character():
         
         for i in self.dealerships:
             small = int(i[3] * 0.15) # Takes a minimum number of people based off of the total number of surrounding people. 
-            large = int(i[3] * 0.85)
+            large = int(i[3] * 0.45)
             specificBuyers = randint(small, large)
             locationPurchases[i[5]] = specificBuyers
             totalSurroundingBuyers += specificBuyers
 
+        ogLocationPurchases = locationPurchases
         locationPurchases = collections.OrderedDict(locationPurchases)
         self.totalVehicles = collections.OrderedDict(self.totalVehicles)
         locationEarnings = {}
 
         count = 0
         # This only runs once because there is only one dealership, which creates an issue in the zip for loop.
-        for person, dealership in zip(locationPurchases.values(), locationPurchases.keys()):
-            print('LEN1 =' + str(locationPurchases.values()) + ' uh =' +str(len(locationPurchases.keys())))
-            # gets the dealership name and the total people buying from that location.
-            possibleBuys = len(self.totalVehicles.keys()) - 1
-            print('PB ' + str(len(self.totalVehicles.keys())))
-            
-            totalVehicles = 0
-            for i in self.totalVehicles.values():
-                totalVehicles += i
-            
-            if possibleBuys == 0:
-                print('uh oh')
-                # add fixer here
-            if totalVehicles > 0:
-                buyType = randint(0, possibleBuys)
-                vehicleNames = list(self.totalVehicles.keys())
-                typeName = vehicleNames[buyType]           
-                numberOfType = self.totalVehicles[typeName]
-                print('NOT ' + str(numberOfType))
-                if numberOfType > 0:
-                    vehiclesLeft = False
-                else:
-                    continue
-                print('len3 ' +str(len(locationPurchases.keys())))
-                for i in self.tierOneVehicles:
-                    if i[0] == typeName:
-                        priceForSelected = i[3]
-                # add other tiers here.
-                # Adds credits to earnings
-                totalEarnings += priceForSelected
-                print('here')
+        for dealership in locationPurchases.keys():
+            peopleAtDealer = locationPurchases[dealership]
+            for person in range(peopleAtDealer):
+                # gets the dealership name and the total people buying from that location.
+                possibleBuys = len(self.totalVehicles.keys()) - 1
                 
-                # Removes car from availability
-                self.totalVehicles[typeName] -= 1
+                totalVehicles = 0
+                for i in self.totalVehicles.values():
+                    totalVehicles += i
+                    
+                    # add fixer here
+                if totalVehicles > 0:
+                    buyType = randint(0, possibleBuys)
+                    vehicleNames = list(self.totalVehicles.keys())
+                    typeName = vehicleNames[buyType]           
+                    numberOfType = self.totalVehicles[typeName]
+                    if numberOfType > 0:
+                        vehiclesLeft = False
+                    else:
+                        continue
+                    for i in self.tierOneVehicles:
+                        if i[0] == typeName:
+                            priceForSelected = i[3]
+                    # add other tiers here.
+                    # Adds credits to earnings
+                    totalEarnings += priceForSelected
+                    
+                    # Removes car from availability
+                    self.totalVehicles[typeName] -= 1
 
-                #Removes the person from buyers list
-                totalSurroundingBuyers -= 1
-                if totalSurroundingBuyers <= 0:
-                    done = True
+                    #Removes the person from buyers list
+                    totalSurroundingBuyers -= 1
+                    if totalSurroundingBuyers <= 0:
+                        done = True
 
-                locationPurchases[dealership] -= 1
-                print('len3 ' +str(len(locationPurchases.keys())))
+                    locationPurchases[dealership] -= 1
 
-                # Adds earnings to specific dealer.
-                if dealership in locationEarnings:
-                    locationEarnings[dealership] += priceForSelected
+                    # Adds earnings to specific dealer.
+                    if dealership in locationEarnings:
+                        locationEarnings[dealership] += priceForSelected
+                    else:
+                        locationEarnings[dealership] = priceForSelected
+
+                    count += 1
+
                 else:
-                    locationEarnings[dealership] = priceForSelected
+                    ranOutOfVehicles = True
 
-                print(str(count) + '. locationEarnings: ' + str(locationEarnings) + ', locationPurchases: ' + str(locationPurchases) + \
-                      ' totalEarnings: ' + str(totalEarnings) + ' totalVehicles: ' + str(self.totalVehicles))
-
-                count += 1
-                print('len3 ' +str(len(locationPurchases.keys())))
-                print('LEN1 =' + str(len(locationPurchases.values())))
-            if totalVehicles <= 0:
-                print('Dunzzies')
-
+        try:
+            if ranOutOfVehicles:
+                pass
+        except(UnboundLocalError):
+            ranOutOfVehicles = False
+            
+        return totalEarnings, ogLocationPurchases, locationEarnings, self.totalVehicles, ranOutOfVehicles
+        
     def increaseScore(self, val=100):
         self.companySize += val
 
@@ -265,7 +426,7 @@ class Character():
                         continue
                 
                                                
-                                    
+                                  
                     
 
     def buyProperty(self):
@@ -313,7 +474,7 @@ class Character():
                     elif ret_tp <= self.money:
                         self.money -= int(ret_tp)
                         print('\nPurchase was successful!\n')
-                        print('Remaining cash: ' + str(self.money))
+                        print('Remaining cash: $' + str(self.money))
                         self.increaseScore()
                         
 
@@ -430,8 +591,8 @@ class Character():
                 
             
             buying = False
-
-smith = Character(0,0,0,0,0,0)
-smith.endTurn()
             
+smith = Character(0,0,0,0,0,0)
+smith.changeVehicleCost()
+
 
