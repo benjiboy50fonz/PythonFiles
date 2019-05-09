@@ -37,27 +37,30 @@ class Character():
         product_types = []
         self.gender = gender
 
+        self.numberSold = {}
+
         self.employeeWage = 75
         self.employeeAnger = 0
 
-        self.totalVehicles = {'coupe':1000}
+        self.totalVehicles = {'coupe':1000,
+                              'SUV':200} 
 
         self.companySize = 0 # The score
         
-        self.tierOneVehicles = [('sedan', 55, 1, 100),
-                                ('SUV', 80, 1, 100),
-                                ('minivan', 70, 1, 100),
-                                ('crossover', 75, 1, 100),
-                                ('coupe',65, 1, 100),
-                                ('van', 75, 1, 100),
-                                ('pickup truck', 80, 1, 100),
-                                ('simple motorcycle', 80, 1, 100),
-                                ('electric scooter', 50, 1, 100),
-                                ('segway personal transporter', 60, 1, 100),
-                                ('canoe', 55, 1, 100),
-                                ('kayak', 55, 1, 100),
-                                ('hang glider', 60, 1, 100),
-                                ('minibus', 75, 1, 100)
+        self.tierOneVehicles = [['sedan', 55, 1, 100],
+                                ['SUV', 80, 1, 100],
+                                ['minivan', 70, 1, 100],
+                                ['crossover', 75, 1, 100],
+                                ['coupe',65, 1, 100],
+                                ['van', 75, 1, 100],
+                                ['pickup truck', 80, 1, 100],
+                                ['simple motorcycle', 80, 1, 100],
+                                ['electric scooter', 50, 1, 100],
+                                ['segway personal transporter', 60, 1, 100],
+                                ['canoe', 55, 1, 100],
+                                ['kayak', 55, 1, 100],
+                                ['hang glider', 60, 1, 100],
+                                ['minibus', 75, 1, 100]
                                 ]                                
 
         self.firstName = firstName
@@ -76,7 +79,24 @@ class Character():
         self.properties = []
 
 ### ADD VEHICLES
+    def resetSold(self):
+        self.numberSold = {}
+        # Should never need
+        
+    def checkLevelUps(self):
+        for vehicle in self.tierOnevehicles:
+            if vehicle in self.numbersold.keys():
+                vehicleReqLevel = vehicle[2] * vehicle[2]
+                if self.numberSold[vehicle] > vehicleReqLevel:
+                    levelUp = True
+                else:
+                    levelUp = False
 
+            if levelUp and vehicle[1] > 20:
+                self.tierOneVehicles[vehicle][1] -= 5
+                self.tierOneVehicles[vehicle][2] += 1
+                
+            
     def changeEmployeeWage(self, val=75):
         self.employeeWage = val
         if val > self.employeeWage:
@@ -85,7 +105,6 @@ class Character():
         # Put this out of 100
 
 
-    # FIX UPDATING
     def changeVehicleCost(self, repeat=False):
         if repeat:
             pass
@@ -102,11 +121,14 @@ class Character():
                 if x[1] > 0:
                     available.append(x[0])
                     
+            print('\nVehicles in Stock: \n')        
             for i in self.tierOneVehicles:
                 if i[0] in available:
-                    print('\nVehicles in Stock: \n')
                     print(str(count) + '. ' + i[0] + '  :  $' + str(i[3]) + '\n')
                     count += 1
+                elif len(available) == 0:
+                    print('You have no vehicles in stock!')
+                    print('\n--- Logging Off Server ---\n')
             notInt = True
             while notInt:
                 try:
@@ -125,28 +147,39 @@ class Character():
                     print(str(choice))
                     print('\nPlease enter a number within the range!\n')
                     continue
-
-                newPrice = input('What would you like to change the price of the ' + str(vehicleName) + ' to?: ')    
-                for set_ in self.tierOneVehicles:
-                    if vehicleName in set_[0]:
-                        original = set_[3]
-                        set_ = list(set_)
-                        set_[3] = newPrice
-                        set_ = tuple(set_)
-                        print('\nThe price for the ' + str(set_[0]) + ' was successfully changed to $' + str(set_[3]) + \
-                              ' from $' + str(original) + '!\n')
-                        unclear = True
-                        while unclear:
-                            again = input('Change another value?: ')
-                            if str(again.lower()) == 'yes':
-                                self.changeVehicleCost(True)
-                            elif str(again.lower()) == 'no':
-                                print('\n--- Logging Off Server --- \n')
-                            else:
-                                print('\nPlease enter \'yes\' or \'no\'!\n')
+                notInt = True
+                index = 0
+                while notInt:
+                    newPrice = input('What would you like to change the price of the ' + str(vehicleName) + ' to?: ')    
+                    for set_ in self.tierOneVehicles:
+                        if vehicleName in set_[0]:
+                            original = set_[3]
+                            
+                            try:
+                                newPrice = int(newPrice)
+                            except(ValueError):
+                                print('\nPlease enter a number!\n')
                                 continue
-                    else:
-                        continue
+
+                            self.tierOneVehicles[index][3] = int(newPrice)
+                            
+                            notInt = False
+                            print('\nThe price for the ' + str(set_[0]) + ' was successfully changed to $' + str(set_[3]) + \
+                                  ' from $' + str(original) + '!\n')
+                            unclear = True
+                            while unclear:
+                                again = input('Change another value?: ')
+                                if str(again.lower()) == 'yes':
+                                    self.changeVehicleCost(True)
+                                elif str(again.lower()) == 'no':
+                                    print('\n--- Logging Off Server --- \n')
+                                    return
+                                else:
+                                    print('\nPlease enter \'yes\' or \'no\'!\n')
+                                    continue
+                        else:
+                            index += 1
+                            continue
 
                 
                 
@@ -243,10 +276,11 @@ class Character():
         self.money -= totalLosses
         return totalLosses, totalTax, totalEmployeeExpenses, robberyStats, totalEmployeeLosses
         
-    def getSales(self):
+    def getSales(self, saleLosses):
         from random import randint
 
         import collections
+        import math
         
         totalSurroundingBuyers = 0
         locationPurchases = {}
@@ -255,13 +289,42 @@ class Character():
         totalEarnings = 0
 
         totalVehicles = 0
+        lossesPerDS = []
         for i in self.totalVehicles.values():
             totalVehicles += i
-        
-        for i in self.dealerships:
+
+        # Funky and jank distribution of sale losses for each ds. #WORKEDFIRSTTIME
+        #TODO: Confirm this is actually working or just not crashing. 
+        if saleLosses >= len(self.dealerships):
+            if math.floor(saleLosses / len(self.dealerships)) == saleLosses / len(self.dealerships):
+                for i in range(len(self.dealerships)):
+                    lossesPerDS.append(saleLosses / len(self.dealerships))
+            else:
+                whole = math.floor(saleLosses / len(self.dealerships))
+                var = len(self.dealerships) * whole
+                remainder = saleLosses - var
+                for ds in self.dealerships:
+                    lossesPerDS.append(whole)
+                lossesPerDS[0] += remainder
+
+        else:
+            if math.floor(len(self.dealerships) / saleLosses) == len(self.dealerships) / saleLosses:
+                for i in range(len(self.dealerships)):
+                    lossesPerDS.append(len(self.dealerships) / saleLosses)
+            else:
+                whole = math.floor(len(self.dealerships) / saleLosses)
+                var = len(self.dealerships) * whole
+                remainder = saleLosses - var
+                for ds in self.dealerships:
+                    lossesPerDS.append(whole)
+                lossesPerDS[0] += remainder
+            
+        for i, x in zip(self.dealerships, lossesPerDS):
             small = int(i[3] * 0.15) # Takes a minimum number of people based off of the total number of surrounding people. 
             large = int(i[3] * 0.45)
             specificBuyers = randint(small, large)
+            if specificBuyers - x >= 0:
+                specificBuyers -= x
             locationPurchases[i[5]] = specificBuyers
             totalSurroundingBuyers += specificBuyers
 
@@ -274,7 +337,7 @@ class Character():
         # This only runs once because there is only one dealership, which creates an issue in the zip for loop.
         for dealership in locationPurchases.keys():
             peopleAtDealer = locationPurchases[dealership]
-            for person in range(peopleAtDealer):
+            for person in range(int(peopleAtDealer)):
                 # gets the dealership name and the total people buying from that location.
                 possibleBuys = len(self.totalVehicles.keys()) - 1
                 
@@ -301,6 +364,12 @@ class Character():
                     
                     # Removes car from availability
                     self.totalVehicles[typeName] -= 1
+
+                    # Adds car to sold dictionary
+                    if str(typeName) in self.numberSold.keys():
+                        self.numberSold[typeName] += 1
+                    else:
+                        self.numberSold[typeName] = 1
 
                     #Removes the person from buyers list
                     totalSurroundingBuyers -= 1
@@ -593,6 +662,8 @@ class Character():
             buying = False
             
 smith = Character(0,0,0,0,0,0)
-smith.changeVehicleCost()
+smith.buyDealership()
+smith.getSales(5)
+
 
 
