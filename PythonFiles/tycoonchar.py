@@ -275,6 +275,52 @@ class Character():
 
         self.money -= totalLosses
         return totalLosses, totalTax, totalEmployeeExpenses, robberyStats, totalEmployeeLosses
+
+    def calcSaleLosses(self):
+        from random import randint
+
+        import math
+
+        #TODO Add necessary limits on car pricing (< 0 = !) and work out mathematics
+
+
+        #Have starting prices for each tier 1:100 2:500 3:1500 4:2500+
+        for i[0] in self.tierOneVehicles:
+            if i[0] in self.totalVehicles:
+                yourVehicleType = i[0]
+                yourVehicleLevel = i[2]
+                yourVehicleCost = i[3]
+
+                range_ = int(i[3] * 0.25)
+                if yourVehicleCost > 100:
+                    difference = yourVehicleCost - 100
+                    multiplier = math.sqrt(difference * 0.25)
+                elif yourVehicleCost == 100:
+
+                else:
+                    difference = 100 - yourVehicleCost
+                    multiplier = -1 * math.sqrt(difference * 0.25)
+                    
+                    
+                qualityComparison = randint(0, 3)
+                if qualityComparison == 0:
+                    # Lower
+                    opposingQuality = randint(1, 3) + yourVehicleLevel
+                elif qualityComparison == 1:
+                    # Higher
+                    var = randint(1, 3)
+                    if yourVehicleLevel <= var:
+                        opposingQuality = 1
+                    else:
+                        opposingQuality = yourVehicleLevel - var
+                else:
+                    opposingQuality = yourVehicleLevel
+
+                if opposingQuality != yourVehicleLevel:
+                    _multiplier = math.sqrt(opposingQuality - yourVehicleLevel)
+
+                else:
+                    _multiplier = 0
         
     def getSales(self, saleLosses):
         from random import randint
@@ -292,13 +338,18 @@ class Character():
         lossesPerDS = []
         for i in self.totalVehicles.values():
             totalVehicles += i
+        print('og sl ' + str(saleLosses))
+        print('og ds len ' + str(len(self.dealerships)))
+        
 
         # Funky and jank distribution of sale losses for each ds. #WORKEDFIRSTTIME
         #TODO: Confirm this is actually working or just not crashing. 
         if saleLosses >= len(self.dealerships):
+            print(str(math.floor(saleLosses / len(self.dealerships))))
+            print(str(saleLosses / len(self.dealerships)))
             if math.floor(saleLosses / len(self.dealerships)) == saleLosses / len(self.dealerships):
                 for i in range(len(self.dealerships)):
-                    lossesPerDS.append(saleLosses / len(self.dealerships))
+                    lossesPerDS.append(int(saleLosses / len(self.dealerships)))
             else:
                 whole = math.floor(saleLosses / len(self.dealerships))
                 var = len(self.dealerships) * whole
@@ -306,11 +357,11 @@ class Character():
                 for ds in self.dealerships:
                     lossesPerDS.append(whole)
                 lossesPerDS[0] += remainder
-
+                print('remainder ' + str(remainder))
         else:
             if math.floor(len(self.dealerships) / saleLosses) == len(self.dealerships) / saleLosses:
                 for i in range(len(self.dealerships)):
-                    lossesPerDS.append(len(self.dealerships) / saleLosses)
+                    lossesPerDS.append(int(len(self.dealerships) / saleLosses))
             else:
                 whole = math.floor(len(self.dealerships) / saleLosses)
                 var = len(self.dealerships) * whole
@@ -318,6 +369,9 @@ class Character():
                 for ds in self.dealerships:
                     lossesPerDS.append(whole)
                 lossesPerDS[0] += remainder
+                print('remainder ' + str(remainder))
+
+        print('lossesPerDS ' + str(lossesPerDS))
             
         for i, x in zip(self.dealerships, lossesPerDS):
             small = int(i[3] * 0.15) # Takes a minimum number of people based off of the total number of surrounding people. 
@@ -325,6 +379,9 @@ class Character():
             specificBuyers = randint(small, large)
             if specificBuyers - x >= 0:
                 specificBuyers -= x
+            elif specificBuyers < x:
+                specificBuyers = 0
+            
             locationPurchases[i[5]] = specificBuyers
             totalSurroundingBuyers += specificBuyers
 
@@ -662,6 +719,8 @@ class Character():
             buying = False
             
 smith = Character(0,0,0,0,0,0)
+smith.buyDealership()
+smith.buyDealership()
 smith.buyDealership()
 smith.getSales(5)
 
