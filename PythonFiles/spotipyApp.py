@@ -5,6 +5,7 @@ import spotipy.oauth2 as oauth2
 
 from tkinter import *
 from tkinter.ttk import *
+from PIL import ImageTk, Image
 
 
 class Application(object):
@@ -69,18 +70,46 @@ class Application(object):
                         for y in list(x.items()):
                             for z in searchList:
                                 if str(z) == str(y[0]).strip():
-                                    artistInfo.append((str(z), str(y[1])))
-                                    
+                                    print(str(z) + ' ' + str(y[0]))
+                                    if len(artistInfo) <= 3:
+                                        artistInfo.append((str(z), str(y[1])))
+                                    else:
+                                        continue
+                                        
                # artistInfo.append(str(result[obj]))
 
         artistInfo = list(artistInfo)
         print(str(artistInfo))
+        artistInfo.sort()
 
-    
-        string = str(printList[0]) + str(artistInfo[0][1]) + '\n' + str(printList[1]) + \
-        str(artistInfo[1][1]) + '\n' + str(printList[2]) + str(artistInfo[2][1]) + '\n' 
+        nameVar = 'Not Found. Try Again?'
+        genreVar = 'Not Found. Try Again?'
+        popVar = 'Not Found. Try Again?'
+        
+        for i in artistInfo:
+            if i[0] == 'name':
+                nameVar = str(i[1])
+            elif i[0] == 'genres':
+                genreVar = str(i[1])
+            elif i[0] == 'popularity':
+                popVar = str(i[1])
 
-        string = 'Results: \n' + string
+        #TODO: Deal with the receiving of individual letters from genre artist info.
+
+        #"['album rock', 'canadian pop', 'classic canadian rock', 'heartland rock', 'mellow gold', 'rock', 'soft rock']"
+        #Above is the issues. 
+
+
+        gString = ''
+        if not genreVar == 'Not Found. Try Again?':
+            print(str(list(genreVar)))
+            for i in list(genreVar):
+                print(i)
+                gString = gString + str(i) + ', '                
+
+        print(gString)        
+                                    
+        string = 'Search Results: \n' + 'Name: ' + nameVar + '\nGenres: ' + str(gString) + '\nPopularity: ' + popVar + '\n'
 
         self.updateLabel(self.result, string)            
             
@@ -88,8 +117,7 @@ class Application(object):
         
     def build(self):
         button1 = self.createButton('Info', self.getInfo, 'blue', column_=1, row_=0)
-        killButton = self.createButton('Quit', self.kill, column_=1, row_
-                                       =1, bg_='red')
+        killButton = self.createButton('Quit', self.kill, column_=1, row_=1, bg_='red')
 
 
         self.label1 = self.createLabel(text='Info Button')
@@ -110,7 +138,25 @@ class Application(object):
 
 root = Tk()
 root.title('Kryptonica')
-root.geometry('700x500')
+root.geometry('800x500') # Make 1950x990
+
+tabControl = Notebook(root)
+welcome = Frame(tabControl)
+
+tabControl.add(welcome, text='Welcome!')
+#tabControl.pack(expand=1, fill='both')
+
+# Implements background image (Include Image in package)
+
+filepath = 'tkBackground2.jpg'
+imported = Image.open(filepath)
+backgroundImage = ImageTk.PhotoImage(imported)
+
+backgroundLabel = tk.Label(root, image=backgroundImage)
+backgroundLabel.place(x=0, y=0, relwidth=1, relheight=1)
+
+
+
 
 
 credentials = oauth2.SpotifyClientCredentials(
@@ -126,7 +172,7 @@ app = Application(root, spotify)
 
 root.mainloop()
 
-
+"""
 bryanAdams_uri = 'spotify:artist:3Z02hBLubJxuFJfhacLSDc'
 
 results = spotify.artist_albums(bryanAdams_uri, album_type='album')
@@ -134,3 +180,4 @@ albums = results['items']
 while results['next']:
     results = spotify.next(results)
     albums.extend(results['items'])
+"""
