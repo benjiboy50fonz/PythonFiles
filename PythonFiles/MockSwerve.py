@@ -30,31 +30,74 @@ strf = float(x)
 
 # NOT field-centric
 
-A = strf - rotate * (length / r)
-B = strf + rotate * (length / r)
-C = fwd - rotate * (width / r)
-D = fwd + rotate * (width / r)
+fc = int(input('Type \'0\' for field-centric and \'1\' for robot-centric: '))
 
-w1s = math.sqrt(B**2 + C**2)
-w2s = math.sqrt(B**2 + D**2)
-w3s = math.sqrt(A**2 + D**2)
-w4s = math.sqrt(A**2 + C**2)
+if fc == 0:
 
-w1a = math.atan2(B, C) * 180 / math.pi
-w2a = math.atan2(B, D) * 180 / math.pi
-w3a = math.atan2(A, D) * 180 / math.pi
-w4a = math.atan2(A, C) * 180 / math.pi
+    A = strf - rotate * (length / r)
+    B = strf + rotate * (length / r)
+    C = fwd - rotate * (width / r)
+    D = fwd + rotate * (width / r)
 
-print('''
-Speeds:
-Front Right: ''' + str(w1s) +
-'''\nFront Left: ''' + str(w2s) +
-'''\nBack Left: ''' + str(w3s) +
-'''\nBack Right: ''' + str(w4s))
+    w1s = math.sqrt(B**2 + C**2)
+    w2s = math.sqrt(B**2 + D**2)
+    w3s = math.sqrt(A**2 + D**2)
+    w4s = math.sqrt(A**2 + C**2)
 
-print('''
-Angles:
-Front Right: ''' + str(w1a) +
-'''\nFront Left: ''' + str(w2a) +
-'''\nBack Left: ''' + str(w3a) +
-'''\nBack Right: ''' + str(w4a))
+    w1a = math.atan2(B, C) * 180 / math.pi
+    w2a = math.atan2(B, D) * 180 / math.pi
+    w3a = math.atan2(A, D) * 180 / math.pi
+    w4a = math.atan2(A, C) * 180 / math.pi
+
+    print('''
+    Speeds:
+    Front Right: ''' + str(w1s) +
+    '''\nFront Left: ''' + str(w2s) +
+    '''\nBack Left: ''' + str(w3s) +
+    '''\nBack Right: ''' + str(w4s))
+
+    print('''
+    Angles:
+    Front Right: ''' + str(w1a) +
+    '''\nFront Left: ''' + str(w2a) +
+    '''\nBack Left: ''' + str(w3a) +
+    '''\nBack Right: ''' + str(w4a))
+
+else:
+
+    gyro = int(input('Gyro Angle: '))
+
+    temp = fwd * math.cos(gyro) + strf * math.sin(gyro)
+    STR = -1 * fwd * math.sin(gyro) + strf * math.cos(gyro)
+
+    fwd = temp
+
+    A = strf - rotate * (length / r)
+    B = strf + rotate * (length / r)
+    C = fwd - rotate * (width / r)
+    D = fwd + rotate * (width / r)
+
+    w1s = math.sqrt(B**2 + C**2)
+    w2s = math.sqrt(B**2 + D**2)
+    w3s = math.sqrt(A**2 + D**2)
+    w4s = math.sqrt(A**2 + C**2)
+
+    w1a = math.atan2(B, C) * 180 / math.pi
+    w2a = math.atan2(B, D) * 180 / math.pi
+    w3a = math.atan2(A, D) * 180 / math.pi
+    w4a = math.atan2(A, C) * 180 / math.pi
+
+    print('''
+    Speeds:
+    Front Right: ''' + str(w1s) +
+    '''\nFront Left: ''' + str(w2s) +
+    '''\nBack Left: ''' + str(w3s) +
+    '''\nBack Right: ''' + str(w4s))
+
+    print('''
+    Angles:
+    Front Right: ''' + str(w1a) +
+    '''\nFront Left: ''' + str(w2a) +
+    '''\nBack Left: ''' + str(w3a) +
+    '''\nBack Right: ''' + str(w4a))
+
