@@ -291,12 +291,12 @@ class Character():
                 yourVehicleLevel = i[2]
                 yourVehicleCost = i[3]
 
-                range_ = int(i[3] * 0.25)
+                range_ = int(yourVehicleCost * 0.25)
                 if yourVehicleCost > 100:
                     difference = yourVehicleCost - 100
                     multiplier = math.sqrt(difference * 0.25)
                 elif yourVehicleCost == 100:
-
+                    multiplier = 0
                 else:
                     difference = 100 - yourVehicleCost
                     multiplier = -1 * math.sqrt(difference * 0.25)
@@ -304,10 +304,10 @@ class Character():
                     
                 qualityComparison = randint(0, 3)
                 if qualityComparison == 0:
-                    # Lower
+                    # Higher compared to you
                     opposingQuality = randint(1, 3) + yourVehicleLevel
                 elif qualityComparison == 1:
-                    # Higher
+                    # Lower compared to you
                     var = randint(1, 3)
                     if yourVehicleLevel <= var:
                         opposingQuality = 1
@@ -321,6 +321,10 @@ class Character():
 
                 else:
                     _multiplier = 0
+
+                final = _multiplier + multiplier
+
+                # Add multipliers together for final
         
     def getSales(self, saleLosses):
         from random import randint
@@ -356,7 +360,18 @@ class Character():
                 remainder = saleLosses - var
                 for ds in self.dealerships:
                     lossesPerDS.append(whole)
-                lossesPerDS[0] += remainder
+                    
+                # Evenly distributes the remaining sale losses 6/25/2019
+                index = 0
+                for loss in range(remainder):
+                    try:
+                        lossesPerDS[index] = lossesPerDS[index] + 1
+                        index += 1
+                    except (IndexError):
+                        index = 0
+                        continue
+                        
+                        
                 print('remainder ' + str(remainder))
         else:
             if math.floor(len(self.dealerships) / saleLosses) == len(self.dealerships) / saleLosses:
@@ -719,8 +734,6 @@ class Character():
             buying = False
             
 smith = Character(0,0,0,0,0,0)
-smith.buyDealership()
-smith.buyDealership()
 smith.buyDealership()
 smith.getSales(5)
 
