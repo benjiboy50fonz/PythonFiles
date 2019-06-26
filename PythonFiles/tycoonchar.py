@@ -116,19 +116,19 @@ class Character():
             return
         else:
             count = 1
-            available = []
-            for x in self.totalVehicles.items():
-                if x[1] > 0:
-                    available.append(x[0])
-                    
             print('\nVehicles in Stock: \n')        
-            for i in self.tierOneVehicles:
-                if i[0] in available:
-                    print(str(count) + '. ' + i[0] + '  :  $' + str(i[3]) + '\n')
-                    count += 1
-                elif len(available) == 0:
+            for i in list(self.totalVehicles.keys()):
+                for x in self.tierOneVehicles:
+                    if x[0] == i:
+                        price = x[3]
+            
+                print(str(count) + '. ' + i + '  :  $' + str(price) + '\n')
+                count += 1
+                if len(list(self.totalVehicles.keys())) == 0:
                     print('You have no vehicles in stock!')
                     print('\n--- Logging Off Server ---\n')
+                    return
+
             notInt = True
             while notInt:
                 try:
@@ -140,16 +140,16 @@ class Character():
                     print('\nPlease enter a number!\n')
                     continue
                 try:
+                    
                     vehicleNames = list(self.totalVehicles.keys())
+                    print(str(vehicleNames))
                     vehicleName = vehicleNames[choice - 1]
                 except(IndexError):
-                    print(str(vehicleNames))
-                    print(str(choice))
                     print('\nPlease enter a number within the range!\n')
                     continue
                 notInt = True
-                index = 0
                 while notInt:
+                    index = 0
                     newPrice = input('What would you like to change the price of the ' + str(vehicleName) + ' to?: ')    
                     for set_ in self.tierOneVehicles:
                         if vehicleName in set_[0]:
@@ -173,6 +173,7 @@ class Character():
                                     self.changeVehicleCost(True)
                                 elif str(again.lower()) == 'no':
                                     print('\n--- Logging Off Server --- \n')
+                                    break
                                     return
                                 else:
                                     print('\nPlease enter \'yes\' or \'no\'!\n')
@@ -335,7 +336,6 @@ class Character():
         totalSurroundingBuyers = 0
         locationPurchases = {}
 
-
         totalEarnings = 0
 
         totalVehicles = 0
@@ -347,8 +347,12 @@ class Character():
         
 
         # Funky and jank distribution of sale losses for each ds. #WORKEDFIRSTTIME
-        #TODO: Confirm this is actually working or just not crashing. 
-        if saleLosses >= len(self.dealerships):
+        #TODO: Confirm this is actually working or just not crashing.
+        if len(self.dealerships) == 0:
+            print('WARNING YOU OWN NO DEALERSHIPS. THEREFORE, YOU CANNOT EARN MONEY VIA SALES.')
+            return
+            
+        elif saleLosses >= len(self.dealerships):
             print(str(math.floor(saleLosses / len(self.dealerships))))
             print(str(saleLosses / len(self.dealerships)))
             if math.floor(saleLosses / len(self.dealerships)) == saleLosses / len(self.dealerships):
@@ -374,17 +378,24 @@ class Character():
                         
                 print('remainder ' + str(remainder))
         else:
-            if math.floor(len(self.dealerships) / saleLosses) == len(self.dealerships) / saleLosses:
-                for i in range(len(self.dealerships)):
-                    lossesPerDS.append(int(len(self.dealerships) / saleLosses))
-            else:
-                whole = math.floor(len(self.dealerships) / saleLosses)
-                var = len(self.dealerships) * whole
-                remainder = saleLosses - var
-                for ds in self.dealerships:
-                    lossesPerDS.append(whole)
-                lossesPerDS[0] += remainder
-                print('remainder ' + str(remainder))
+            index = 0
+            empty = False
+            if len(lossesPerDS) == 0:
+                empty = True
+            for loss in range(saleLosses):
+                try:
+                    lossesPerDS[index] = lossesPerDS[index] + 1
+                    index += 1
+                except (IndexError):
+                    if empty:
+                        lossesPerDS.append(1)
+                        index += 1
+
+            # fills in zeros for the dealerships with no losses.
+            while len(lossesPerDS) != len(self.dealerships):
+                lossesPerDS.append(0)
+                
+            print('hmm')
 
         print('lossesPerDS ' + str(lossesPerDS))
             
@@ -734,8 +745,8 @@ class Character():
             buying = False
             
 smith = Character(0,0,0,0,0,0)
-smith.buyDealership()
-smith.getSales(5)
+smith.changeVehicleCost()
+print(str(smith.getSales(1)))
 
-
+#totalEarnings, ogLocationPurchases, locationEarnings, self.totalVehicles, ranOutOfVehicles
 
