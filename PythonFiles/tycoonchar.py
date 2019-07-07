@@ -286,16 +286,22 @@ class Character():
 
 
         #Have starting prices for each tier 1:100 2:500 3:1500 4:2500+
-        for i[0] in self.tierOneVehicles:
+
+        vehicleMultipliers = []
+        totalLosses = 0
+        
+        for i in self.tierOneVehicles:
             if i[0] in self.totalVehicles:
                 yourVehicleType = i[0]
                 yourVehicleLevel = i[2]
                 yourVehicleCost = i[3]
 
-                range_ = int(yourVehicleCost * 0.25)
                 if yourVehicleCost > 100:
                     difference = yourVehicleCost - 100
-                    multiplier = math.sqrt(difference * 0.25)
+                    multiplier = math.sqrt(difference * 0.5)
+                    while difference > 100:
+                        multiplier += 5
+                        difference -= 100
                 elif yourVehicleCost == 100:
                     multiplier = 0
                 else:
@@ -323,16 +329,27 @@ class Character():
                 else:
                     _multiplier = 0
 
-                final = _multiplier + multiplier
+                lossPercentage = (_multiplier + multiplier) * 1.5
 
+                print(str(lossPercentage))
+
+                vehicleMultipliers.append([yourVehicleType, lossPercentage]) 
+
+                totalLosses += lossPercentage
+
+        return vehicleMultipliers, totalLosses
+        
                 # Add multipliers together for final
         
-    def getSales(self, saleLosses):
+    def getSales(self):
         from random import randint
 
         import collections
         import math
-        
+
+        saleReport, saleLosses = self.calcSaleLosses()
+        ogSaleLosses = saleLosses
+
         totalSurroundingBuyers = 0
         locationPurchases = {}
 
@@ -349,7 +366,7 @@ class Character():
         # Funky and jank distribution of sale losses for each ds. #WORKEDFIRSTTIME
         #TODO: Confirm this is actually working or just not crashing.
         if len(self.dealerships) == 0:
-            print('WARNING YOU OWN NO DEALERSHIPS. THEREFORE, YOU CANNOT EARN MONEY VIA SALES.')
+            print('WARNING: YOU OWN NO DEALERSHIPS. THEREFORE, YOU CANNOT EARN MONEY VIA SALES.')
             return
             
         elif saleLosses >= len(self.dealerships):
@@ -367,7 +384,7 @@ class Character():
                     
                 # Evenly distributes the remaining sale losses 6/25/2019
                 index = 0
-                for loss in range(remainder):
+                for loss in range(int(remainder)):
                     try:
                         lossesPerDS[index] = lossesPerDS[index] + 1
                         index += 1
@@ -478,7 +495,7 @@ class Character():
         except(UnboundLocalError):
             ranOutOfVehicles = False
             
-        return totalEarnings, ogLocationPurchases, locationEarnings, self.totalVehicles, ranOutOfVehicles
+        return totalEarnings, ogSaleLosses, ogLocationPurchases, locationEarnings, self.totalVehicles, ranOutOfVehicles
         
     def increaseScore(self, val=100):
         self.companySize += val
@@ -746,7 +763,9 @@ class Character():
             
 smith = Character(0,0,0,0,0,0)
 smith.changeVehicleCost()
-print(str(smith.getSales(1)))
+smith.buyDealership()
+smith.buyDealership()
+print(str(smith.getSales()))
 
 #totalEarnings, ogLocationPurchases, locationEarnings, self.totalVehicles, ranOutOfVehicles
 
