@@ -14,6 +14,9 @@ class Chess():
 
         # X is 1, O is 2
 
+        self.placeRow = 0
+        self.placeColumn = 0
+
         self.nullList = [[' ', ' ', ' '],
                          [' ', ' ', ' '],
                          [' ', ' ', ' ']
@@ -56,9 +59,22 @@ class Chess():
 
         self.generateField()
 
+
+        self.playerMove()
+        self.playerMove()
+        self.aiMove()
+        
         while self.gameOn:
             self.playerMove()
-            self.aiMove()
+            action = self.aiMove()
+            if action == 'Draw':
+                print('\nGame Over! Tie!')
+                break
+            elif not action:
+                print('\nGame Over! You Lost!')
+                break
+            else:
+                continue
 
 
         # Add the game moves here
@@ -125,7 +141,13 @@ class Chess():
                 return True
 
         else:
-            self.aiScore()
+            move = self.aiScore()
+            if move == 'Loss':
+                return False
+            elif move == 'Draw':
+                return 'Draw'
+            else:
+                return True
 
             # Add scoring intelligence here
             
@@ -203,7 +225,7 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2:
-            self.placeRow = self.left.index('0')
+            self.placeRow = self.middle.index('0')
             self.placeColumn = 1
         
         else:
@@ -214,7 +236,7 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2:
-            self.placeRow = self.left.index('0')
+            self.placeRow = self.right.index('0')
             self.placeColumn = 2
 
         else:
@@ -287,10 +309,16 @@ class Chess():
         dualCorners, posRowTwo, posColumnTwo = self.checkDualCorners()
         sideCheck, posRowThree, posColumnThree = self.checkSides()
         dualSides, PosRowFour, posColumnFour = self.checkDualSides()
+        win, posRowFive, posColumnFive = self.checkForTwo()
+        done = self.checkDraw()
         
-        # Insert check win here.
-        
-        if self.board[1][1] == ' ':
+        if done:
+            return 'Draw'
+        elif win:
+            self.board[posRowFive][posColumnFive] = self.aiSymbol
+            self.updateBoard()
+            return 'Loss'
+        elif self.board[1][1] == ' ':
             self.board[1][1] = self.aiSymbol
             self.updateBoard()
             return True
@@ -341,12 +369,12 @@ class Chess():
             lower = self.corners.index(i) - 1
             higher = self.corners.index(i) + 1
             if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.corners[lower])[0]][(self.corners[lower])[1]] == ' ':
-                return True, (i - 1)[0], (i - 1)[1]
+                return True, (self.corners[lower])[0], (self.corners[lower])[1]
             if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.corners[higher])[0]][(self.corners[higher])[1]] == ' ':
-                return True, (self.corners[lower])[0], (self.corners[higher])[1]
+                return True, (self.corners[higher])[0], (self.corners[higher])[1]
         return False, -1, -1
             
-
+        # TODO Line 373 List index out of range.
     def checkSides(self):
         for i in self.sides:
             if self.board[i[0]][i[1]] == self.playerSymbol:
@@ -358,17 +386,139 @@ class Chess():
 
     def checkDualSides(self):
         for i in self.sides:
-            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(i - 1)[0]][(i - 1)[1]] == ' ':
-                return True, (i - 1)[0], (i - 1)[1]
-            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(i + 1)[0]][(i + 1)[1]] == ' ':
-                return True, (i + 1)[0], (i + 1)[1]
+            lower = self.sides.index(i) - 1
+            higher = self.sides.index(i) + 1
+            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.sides[lower])[0]][(self.sides[lower])[1]] == ' ':
+                return True, (self.sides[lower])[0], (self.sides[lower])[1]
+            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.sides[higher])[0]][(self.sides[higher])[1]] == ' ':
+                return True, (self.sides[higher])[0], (self.sides[higher])[1]
         return False, -1, -1
 
     def checkForTwo(self):
-        pass
+        # Checks horizontal
+        for i in self.board:
+            for x in i:
+                if x == self.aiSymbol and (i.index(x) + 1 == self.aiSymbol or i.index(x) - 1 == self.aiSymbol):
+                    # Find the available spot.
+                    for x in i:
+                        if x == ' ':
+                            self.placeColumn = i.index(x)
+                            self.placeRow = i
+                            return True, self.placeColumn, self.placeRow 
 
+        # Checks vertical
+
+        self.aiLeft = []
+        self.aiMiddle = []
+        self.aiRight = []
+        
+        for i in self.board:
+            for x in i:
+                pos = i.index(x)
+                if x == self.aiSymbol:
+                    if pos == 0:
+                        self.aiLeft.append(self.aiSymbol)
+                    elif pos == 1:
+                        self.aiMiddle.append(self.aiSymbol)
+                    else:
+                        self.aiRight.append(self.aiSymbol)
+                else:
+                    if pos == 0:
+                        self.aiLeft.append('0')
+                    elif pos == 1:
+                        self.aiMiddle.append('0')
+                    else:
+                        self.aiRight.append('0')
+    
+        count = 0
+        for i in self.aiLeft:
+            if i == self.aiSymbol:
+                count += 1
+        if count == 2:
+            self.placeRow = self.aiLeft.index('0')
+            self.placeColumn = 0
+            return True, self.placeRow, self.placeColumn
+
+        count = 0
+        for i in self.aiMiddle:
+            if i == self.aiSymbol:
+                count += 1
+        if count == 2:
+            self.placeRow = self.aiMiddle.index('0')
+            self.placeColumn = 1
+            return True, self.placeRow, self.placeColumn
+           
+        count = 0
+        for i in self.aiRight:
+            if i == self.aiSymbol:
+                count += 1
+        if count == 2:
+            self.placeRow = self.aiRight.index('0')
+            self.placeColumn = 2
+            return True, self.placeRow, self.placeColumn
+
+        # Checks Diagonal
+
+        LeftRightCount = 0
+        RightLeftCount = 0
+    
+        if self.board[0][0] == self.aiSymbol:
+            LeftRightCount += 1
+
+        if self.board[1][1] == self.aiSymbol:
+            LeftRightCount += 1
+                        
+        if self.board[2][2] == self.aiSymbol:
+            LeftRightCount += 1
+
+        if LeftRightCount == 2:
+            num = -1
+            for i in range(3):
+                num += 1
+                if not self.board[num][num] == self.aiSymbol:
+                    self.placeRow = num
+                    self.placeColumn = num
+
+            return True, self.placeRow, self.placeColumn
+                    
+                    
+        if self.board[0][2] == self.aiSymbol:
+            RightLeftCount += 1
+
+        if self.board[1][1] == self.aiSymbol:
+            RightLeftCount += 1
+                        
+        if self.board[2][0] == self.aiSymbol:
+            RightLeftCount += 1
+
+        if RightLeftCount == 2:
+            num = -1
+            for i in range(3):
+                num += 1
+                if not self.board[0][2] == self.aiSymbol:
+                    self.placeRow = 0
+                    self.placeColumn = 2           
+
+                if not self.board[1][1] == self.aiSymbol:
+                    self.placeRow = 1
+                    self.placeColumn = 1
+
+                if not self.board[2][0] == self.aiSymbol:
+                    self.placeRow = 2
+                    self.placeColumn = 0
+                    
+            return True, self.placeRow, self.placeColumn
+
+        return False, -1, -1
+        
     def checkPlayerWin(self):
         pass
+
+    def checkDraw(self):
+        if len(self.board) == 9:
+            return True
+        else:
+            return False
 
     def updateBoard(self):
         rowOne = generateGroup(self.board, 0)
