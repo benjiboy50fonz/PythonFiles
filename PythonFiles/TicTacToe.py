@@ -46,7 +46,7 @@ class Chess():
                 incorrect = False
 
             elif str(choice) == '2':
-                print('\nYou chose Y\'s!')
+                print('\nYou chose O\'s!')
                 self.playerSymbol = 'O'
                 self.aiSymbol = 'X'
                 incorrect = False
@@ -58,20 +58,34 @@ class Chess():
         self.gameOn = True
 
         self.generateField()
+        wrong = True
+        while wrong:
+            start = str(input('\nWould you like to begin? (\'Yes\' or \'No\'): ')).lower()
+            if start == 'yes':
+                aiFirst = False
+                wrong = False
+            elif start == 'no':
+                aiFirst = True
+                wrong = False
+            else:
+                print('\nPlease enter \'Yes\' or \'No\'!')
+                continue
 
-
-        self.playerMove()
-        self.playerMove()
-        self.aiMove()
-        
         while self.gameOn:
-            self.playerMove()
-            action = self.aiMove()
+            print(str(self.board))
+            if aiFirst:
+                action = self.aiMove()
+                aiFirst = False
+            else:
+                self.playerMove()
+                action = self.aiMove()
             if action == 'Draw':
                 print('\nGame Over! Tie!')
                 break
             elif not action:
+                print(str(action))
                 print('\nGame Over! You Lost!')
+                print(str(self.board))
                 break
             else:
                 continue
@@ -90,19 +104,27 @@ class Chess():
         print('\nYour move!')
         while wrong:
             row = input('\nEnter a Row Number (1, 2, 3): ')
-            if ('.' not in str(row)) and (int(row) <= 3 and int(row) >= 1):
-                pass
-            else:
-                print('\nPlease enter 1, 2, or 3!')
+            try:
+                if ('.' not in str(row)) and (int(row) <= 3 and int(row) >= 1):
+                    pass
+                else:
+                    print('\nPlease enter 1, 2, or 3!')
+                    continue
+            except(ValueError):
+                print('\nPlease enter a number!')
                 continue
-
+                
             column = input('\nEnter a Column Number (1, 2, 3): ')
-            if ('.' not in str(column)) and (int(column) <= 3 and int(column) >= 1):
-                pass
-            else:
-                print('\nPlease enter 1, 2, or 3!')
+            try:
+                if ('.' not in str(column)) and (int(column) <= 3 and int(column) >= 1):
+                    pass
+                else:
+                    print('\nPlease enter 1, 2, or 3!')
+                    continue
+            except(ValueError):
+                print('\nPlease enter a number!')
                 continue
-            
+                
             if self.board[int(row) - 1][int(column) - 1] != ' ':
                 print('\nThat Space is Taken! Please choose another!')
                 continue
@@ -115,6 +137,8 @@ class Chess():
 
     def aiMove(self):
         print('\nOpponent\'s Turn!\n')
+
+        runNext = False
 
         if self.checkHorizontal():
             if self.board[self.placeRow][self.placeColumn] != ' ':
@@ -140,7 +164,9 @@ class Chess():
                 self.updateBoard()
                 return True
 
-        else:
+        runNext = True
+
+        if runNext:
             move = self.aiScore()
             if move == 'Loss':
                 return False
@@ -214,6 +240,7 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2:
+            print(str(self.middle + self.board)) 
             self.placeRow = self.left.index('0')
             self.placeColumn = 0
 
@@ -225,6 +252,7 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2:
+            print(str(self.middle + self.board)) 
             self.placeRow = self.middle.index('0')
             self.placeColumn = 1
         
@@ -236,6 +264,7 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2:
+            print(str(self.middle + self.board)) 
             self.placeRow = self.right.index('0')
             self.placeColumn = 2
 
@@ -315,19 +344,15 @@ class Chess():
         if done:
             return 'Draw'
         elif win:
-            self.board[posRowFive][posColumnFive] = self.aiSymbol
-            self.updateBoard()
-            return 'Loss'
+            if self.board[posRowFive][posColumnFive] == ' ':
+                print('ran this')
+                self.board[posRowFive][posColumnFive] = self.aiSymbol
+                self.updateBoard()
+                return 'Loss'
+            else:
+                return True
         elif self.board[1][1] == ' ':
             self.board[1][1] = self.aiSymbol
-            self.updateBoard()
-            return True
-        elif self.aiMiddle and dualCorners:
-            self.board[posRowTwo][posRowColumn] = self.aiSymbol
-            self.updateBoard()
-            return True
-        elif self.aiMiddle and cornerCheck:
-            self.board[posRow][posColumn] = self.aiSymbol
             self.updateBoard()
             return True
         elif self.aiMiddle and dualSides:
@@ -336,6 +361,14 @@ class Chess():
             return True
         elif self.aiMiddle and sideCheck:
             self.board[posRowThree][posColumnThree] = self.aiSymbol
+            self.updateBoard()
+            return True
+        elif self.aiMiddle and dualCorners:
+            self.board[posRowTwo][posRowColumn] = self.aiSymbol
+            self.updateBoard()
+            return True
+        elif self.aiMiddle and cornerCheck:
+            self.board[posRow][posColumn] = self.aiSymbol
             self.updateBoard()
             return True
         elif dualCorners:
@@ -354,6 +387,27 @@ class Chess():
             self.board[posRowThree][posColumnThree] = self.aiSymbol
             self.updateBoard()
             return True
+        else:
+            self.available = self.findOpen()
+            if self.available == []:
+                return 'Draw'
+            else:
+                print('FOUND RANDOM')
+                self.board[self.available[0][0], self.available[0][1]] = self.aiSymbol
+                self.updateBoard()
+            
+    def findOpen(self):
+        available = []
+        for i in self.board:
+            for x in i:
+                if x == ' ':
+                    column = i.index(x)
+                    row = self.board.index(i)
+                    available.append(row, column)
+
+        return available
+                    
+                    
 
     def checkCorners(self):
         for i in self.corners:
@@ -368,10 +422,18 @@ class Chess():
         for i in self.corners:
             lower = self.corners.index(i) - 1
             higher = self.corners.index(i) + 1
-            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.corners[lower])[0]][(self.corners[lower])[1]] == ' ':
-                return True, (self.corners[lower])[0], (self.corners[lower])[1]
-            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.corners[higher])[0]][(self.corners[higher])[1]] == ' ':
-                return True, (self.corners[higher])[0], (self.corners[higher])[1]
+            try:
+                if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.corners[lower])[0]][(self.corners[lower])[1]] == ' ':
+                    return True, (self.corners[lower])[0], (self.corners[lower])[1]
+            except(IndexError):
+                pass
+
+            try: 
+                if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.corners[higher])[0]][(self.corners[higher])[1]] == ' ':
+                    return True, (self.corners[higher])[0], (self.corners[higher])[1]
+            except(IndexError):
+                pass
+
         return False, -1, -1
             
         # TODO Line 373 List index out of range.
@@ -388,13 +450,47 @@ class Chess():
         for i in self.sides:
             lower = self.sides.index(i) - 1
             higher = self.sides.index(i) + 1
-            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.sides[lower])[0]][(self.sides[lower])[1]] == ' ':
-                return True, (self.sides[lower])[0], (self.sides[lower])[1]
-            if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.sides[higher])[0]][(self.sides[higher])[1]] == ' ':
-                return True, (self.sides[higher])[0], (self.sides[higher])[1]
+            try:
+                if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.sides[lower])[0]][(self.sides[lower])[1]] == ' ':
+                    return True, (self.sides[lower])[0], (self.sides[lower])[1]
+
+            except(IndexError):
+                pass
+            try:
+                if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.sides[higher])[0]][(self.sides[higher])[1]] == ' ':
+                    return True, (self.sides[higher])[0], (self.sides[higher])[1]
+                
+            except(IndexError):
+                pass
+
         return False, -1, -1
 
+
+    def checkOpponentDualCorner(self):
+        if self.playerSymbol == self.board[1][1]:
+            otherRow = -1
+            otherColumn = -1
+            for i in self.corners:
+                lower = self.corners.index(i) - 1
+                higher = self.corners.index(i) + 1
+                try:
+                    if self.board[i[0]][i[1]] == self.playerSymbol and self.board[(self.corners[lower])[0]][(self.corners[lower])[1]] == ' ':
+                        otherRow = self.corners[lower][0]
+                        otherColumn = self.corners[lower][1]
+                except(IndexError):
+                    pass
+
+                try: 
+                    if self.board[i[0]][i[1]] == self.aiSymbol and self.board[(self.corners[higher])[0]][(self.corners[higher])[1]] == ' ':
+                        otherRow = self.corners[higher][0]
+                        otherColumn = self.corners[higher][1]
+                except(IndexError):
+                    pass
+
+                
+
     def checkForTwo(self):
+        #TODO: Look at incorrectScript.py and continue to debug. :)
         # Checks horizontal
         for i in self.board:
             for x in i:
@@ -515,7 +611,7 @@ class Chess():
         pass
 
     def checkDraw(self):
-        if len(self.board) == 9:
+        if ' ' not in self.board and 'X' in self.board and 'O' in self.board:
             return True
         else:
             return False
