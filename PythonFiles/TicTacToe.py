@@ -30,7 +30,7 @@ class Chess():
         print(generateGroup(self.nullList))
         print('\nWelcome to the unbeatable game!')
 
-        self.aiMiddle = False
+        self.aiMiddleP = False
         self.corners = [[0,0], [0,2], [2,0], [2,2]]
         self.oppCorners = [[[0, 0], [2, 2]],
                            [[0, 2], [2, 0]]]
@@ -78,7 +78,6 @@ class Chess():
                 continue
 
         while self.gameOn:
-            print(str(self.board))
             if aiFirst:
                 action = self.aiMove()
                 aiFirst = False
@@ -89,9 +88,7 @@ class Chess():
                 print('\nGame Over! Tie!')
                 
             elif not action:
-                print(str(action))
                 print('\nGame Over! You Lost!')
-                print(str(self.board))
                 
             else:
                 continue
@@ -162,7 +159,6 @@ class Chess():
 
         win, posRow, posColumn = self.checkForTwo()
         if win:
-            print('this should run')
             if self.board[posRow][posColumn] != ' ':
                 pass
             else:
@@ -272,7 +268,6 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2 and '0' in self.left:
-            print(str(self.left + self.board)) 
             self.placeRow = self.left.index('0')
             self.placeColumn = 0
 
@@ -284,7 +279,6 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2 and '0' in self.middle:
-            print(str(self.middle + self.board)) 
             self.placeRow = self.middle.index('0')
             self.placeColumn = 1
         
@@ -296,7 +290,6 @@ class Chess():
             if i == self.playerSymbol:
                 count += 1
         if count == 2 and '0' in self.right:
-            print(str(self.right + self.board)) 
             self.placeRow = self.right.index('0')
             self.placeColumn = 2
 
@@ -374,74 +367,72 @@ class Chess():
         done = self.checkDraw()
         checkOppDC, posRowSix, posColumnSix = self.checkOpponentDualCorner()
         checkOppDS, posRowSev, psoColumnSev = self.checkOpponentDualSide()
+        checkOppC, posRowEigh, posColumnEigh = self.checkOppCorners()
         
         if done:
             return 'Draw'
         elif win:
             if self.board[posRowFive][posColumnFive] == ' ':
-                print('ran this')
                 self.board[posRowFive][posColumnFive] = self.aiSymbol
                 self.updateBoard()
                 return 'Loss'
             else:
-                print('bro')
                 return True
         elif self.board[1][1] == ' ':
             self.board[1][1] = self.aiSymbol
+            self.aiMiddleP = True
             self.updateBoard()
-            print('here')
             return True
         elif checkOppDC:
             self.board[posRowSix][posColumnSix] = self.aiSymbol
             self.updateBoard()
-            print('dhf...p')
             return True
-        elif self.aiMiddle and dualSides:
+        elif checkOppDS:
+            self.board[posRowSev][posColumnSev] = self.aiSymbol
+            self.updateBoard()
+            return True
+        elif checkOppC:
+            self.board[posRowEigh][posColumnEigh] = self.aiSymbol
+            self.updateBoard()
+            return True
+        elif self.aiMiddleP and dualSides:
             self.board[posRowFour][posColumnFour] = self.aiSymbol
             self.updateBoard()
-            print('dhf')
             return True
-        elif self.aiMiddle and dualCorners:
+        elif self.aiMiddleP and dualCorners:
             self.board[posRowTwo][posColumnTwo] = self.aiSymbol
             self.updateBoard()
-            print('what')
             return True
-        elif self.aiMiddle and cornerCheck:
+        elif self.aiMiddleP and cornerCheck:
             self.board[posRow][posColumn] = self.aiSymbol
             self.updateBoard()
-            print('f')
             return True
-        elif self.aiMiddle and sideCheck:
+        elif self.aiMiddleP and sideCheck:
             self.board[posRowThree][posColumnThree] = self.aiSymbol
             self.updateBoard()
-            print('sdfjshd')
             return True
         elif dualCorners:
             self.board[posRowTwo][posRowColumn] = self.aiSymbol
             self.updateBoard()
-            print('python')
             return True
+        
         elif cornerCheck:
             self.board[posRow][posColumn] = self.aiSymbol
             self.updateBoard()
-            print('code')
             return True
         elif dualSides:
             self.board[posRowFour][posColumnFour] = self.aiSymbol
             self.updateBoard()
-            print('jfkjs')
             return True
         elif sideCheck:
             self.board[posRowThree][posColumnThree] = self.aiSymbol
             self.updateBoard()
             return True
-            print('ogkdo')
         else:
             self.available = self.findOpen()
             if self.available == []:
                 return 'Draw'
             else:
-                print('FOUND RANDOM')
                 self.board[self.available[0][0], self.available[0][1]] = self.aiSymbol
                 self.updateBoard()
             
@@ -455,27 +446,39 @@ class Chess():
                     available.append(row, column)
 
         return available
-                    
-                    
 
+
+   
     def checkCorners(self):
+        for i in self.corners:
+            if self.board[i[0]][i[1]] == self.playerSymbol or self.board[i[0]][i[1]] == self.aiSymbol:
+                pass
+            else:
+                return True, i[0], i[1] 
+
+        return False, -1, -1
+
+
+    def checkOppCorners(self):
         for i in self.corners:
             if self.board[i[0]][i[1]] == self.playerSymbol:
                 pass
             else:
-                for i in self.oppCorners:
-                    if i[0] == [i[0], i[1]]:
-                        if self.board[[i[1]][0]][[i[1]][1]] == self.playerSymbol:
+                for x in self.oppCorners:
+                    if i == [x[0]]:
+                        if self.board[[x[1]][0]][[x[1]][1]] == self.playerSymbol:
                             pass
                         else:
                             return True, i[0], i[1]
-                    if i[1] == [i[0], i[1]]:
-                        if self.board[[i[0]][0]][[i[0][1]]] == self.playerSymbol:
+                    if i == [x[1]]:
+                        if self.board[[x[0]][0]][[x[0][1]]] == self.playerSymbol:
                             pass
                         else:
-                            return True, i[0], i[1]
-    
+                            return True, x[0], x[1]
+
         return False, -1, -1
+
+
 
     def checkDualCorners(self):
         for i in self.corners:
@@ -532,19 +535,7 @@ class Chess():
                 self.board[z[1][1][0]][z[1][1][1]] == self.playerSymbol and self.board[z[0][0]][z[0][1]] == ' ':
                 return True, z[0][0], z[0][1]
             
-                    
-            '''         
 
-            except(IndexError):
-                pass
-            try:
-                if self.board[i[0]][i[1]] == self.playerSymbol and self.board[(self.sides[higher])[0]][(self.sides[higher])[1]] == self.playerSymbol:
-                    return True, (self.sides[higher])[0], (self.sides[higher])[1]
-                
-            except(IndexError):
-                pass
-
-            '''
         return False, -1, -1
         
 
@@ -579,7 +570,6 @@ class Chess():
 
     def checkForTwo(self):
         # Checks horizontal
-        print('hmm1')
         for i in self.board:
             for x in i:
                 if x == self.aiSymbol and (i.index(x) + 1 == self.aiSymbol or i.index(x) - 1 == self.aiSymbol):
@@ -621,7 +611,7 @@ class Chess():
         for i in self.aiLeft:
             if i == self.aiSymbol:
                 count += 1
-        if count == 2:
+        if count == 2 and '0' in self.aiLeft:
             self.placeRow = self.aiLeft.index('0')
             self.placeColumn = 0
             return True, self.placeRow, self.placeColumn
@@ -630,7 +620,7 @@ class Chess():
         for i in self.aiMiddle:
             if i == self.aiSymbol:
                 count += 1
-        if count == 2:
+        if count == 2 and '0' in self.aiMiddle:
             self.placeRow = self.aiMiddle.index('0')
             self.placeColumn = 1
             return True, self.placeRow, self.placeColumn
@@ -639,7 +629,7 @@ class Chess():
         for i in self.aiRight:
             if i == self.aiSymbol:
                 count += 1
-        if count == 2:
+        if count == 2 and '0' in self.aiRight:
             self.placeRow = self.aiRight.index('0')
             self.placeColumn = 2
             return True, self.placeRow, self.placeColumn
