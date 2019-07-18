@@ -38,6 +38,9 @@ class Application(object):
 
         return input_
 
+    def createNewTab(self, text, tab):
+        tabControl.add(tab, text=str(text))
+
     def returnInput(self, inp):
         return str(inp.get())
 
@@ -48,7 +51,7 @@ class Application(object):
         res = 'You said: ' + inp.get()
         label.configure(text= res)
 
-    def searchArtists(self, inp, label):
+    def searchArtists(self, inp, label, welcome):
         search = self.returnInput(inp)
         result = self.music.search(str(search), limit=1, type='artist')
        # print(str(result.values()))
@@ -60,7 +63,6 @@ class Application(object):
         artistInfo = []
 
         string = ''
-
 
         for obj in searchList:
             for i in result.values():
@@ -94,30 +96,39 @@ class Application(object):
             elif i[0] == 'popularity':
                 popVar = str(i[1])
 
-        #TODO: Deal with the receiving of individual letters from genre artist info.
 
         #"['album rock', 'canadian pop', 'classic canadian rock', 'heartland rock', 'mellow gold', 'rock', 'soft rock']"
-        #Above is the issues. 
+        #Above is the issue. 
 
 
         gString = ''
         if not genreVar == 'Not Found. Try Again?':
-            print(str(list(genreVar)))
             for i in list(genreVar):
-                print(i)
-                gString = gString + str(i) + ', '                
+                if i == ']' or i == '[' or i == '\'':
+                    pass
+                else:    
+                    gString = gString + str(i)              
 
-        print(gString)        
+
+        gString.replace('\'', '')
+        gString.replace('[', '')
+        gString.replace(']', '')
+        gString.replace(',', '')
                                     
         string = 'Search Results: \n' + 'Name: ' + nameVar + '\nGenres: ' + str(gString) + '\nPopularity: ' + popVar + '\n'
 
-        self.updateLabel(self.result, string)            
-            
+        self.updateLabel(self.result, string)
+
+        enterArtistButton = self.createButton('Go To ' + str(nameVar), command= lambda: self.createNewTab(nameVar, welcome), width_=str(len(nameVar) + 2), column_=1, row_=5, bg_='orange')
+
+
 
         
     def build(self):
         button1 = self.createButton('Info', self.getInfo, 'blue', column_=1, row_=0)
         killButton = self.createButton('Quit', self.kill, column_=1, row_=1, bg_='red')
+
+        
 
 
         self.label1 = self.createLabel(text='Info Button')
@@ -126,10 +137,9 @@ class Application(object):
 
         self.inp1 = self.createInput(column_=3)
 
-        switchButton = self.createButton('Search: ', command= lambda: self.searchArtists(self.inp1, self.result), column_=1, row_=2, bg_='green')
+        switchButton = self.createButton('Search: ', command= lambda: self.searchArtists(self.inp1, self.result, welcome), column_=1, row_=2, bg_='green')
 
-
-    def __init__(self, master, music, **kwargs):
+    def __init__(self, master, music, welcome, **kwargs):
         super(Application, self).__init__()
         self.master = master
         self.music = music
@@ -168,7 +178,7 @@ token = credentials.get_access_token()
 
 spotify = spotipy.Spotify(auth=token)
 
-app = Application(root, spotify)
+app = Application(root, spotify, welcome)
 
 root.mainloop()
 
