@@ -38,8 +38,11 @@ class Application(object):
 
         return input_
 
-    def createNewTab(self, text, tab):
-        tabControl.add(tab, text=str(text))
+    def createNewWindow(self, text, tab, id_):
+        print('Button pressed')
+        self.tabControl.add(tab, text=str(text))
+
+        newTab = artistWindow(self.tabControl, str(text), self.music, id_)
 
     def returnInput(self, inp):
         return str(inp.get())
@@ -55,6 +58,18 @@ class Application(object):
         search = self.returnInput(inp)
         result = self.music.search(str(search), limit=1, type='artist')
        # print(str(result.values()))
+
+        dict_ = result
+        print(dict_.values())
+
+        for i in result.values():
+            # i is the three paragraph sections
+            if 'items' in i:
+                for x in i['items']:
+                    for y in list(x.items()):
+                        if str(y[0]) == 'id':
+                            artistID = str(y[1])
+
         
         # Gather artist data
 
@@ -119,9 +134,9 @@ class Application(object):
 
         self.updateLabel(self.result, string)
 
-        enterArtistButton = self.createButton('Go To ' + str(nameVar), command= lambda: self.createNewTab(nameVar, welcome), width_=str(len(nameVar) + 2), column_=1, row_=5, bg_='orange')
+        artistFrame = Frame(self.tabControl)
 
-
+        enterArtistButton = self.createButton('Go To ' + str(nameVar), command= lambda: self.createNewWindow(nameVar, artistFrame, artistID), width_=str(len(nameVar) + 2), column_=1, row_=5, bg_='orange')
 
         
     def build(self):
@@ -137,13 +152,53 @@ class Application(object):
 
         self.inp1 = self.createInput(column_=3)
 
-        switchButton = self.createButton('Search: ', command= lambda: self.searchArtists(self.inp1, self.result, welcome), column_=1, row_=2, bg_='green')
+        switchButton = self.createButton('Search: ', command= lambda: self.searchArtists(self.inp1, self.result, welcomeTab), column_=1, row_=2, bg_='green')
 
-    def __init__(self, master, music, welcome, **kwargs):
+    def __init__(self, master, music, welcome, tabControl, **kwargs):
         super(Application, self).__init__()
+        self.tabControl = tabControl
         self.master = master
         self.music = music
         self.build()
+
+class artistWindow(Frame):
+
+    def __init__(self, root, name, music, id_):
+        Frame.__init__(self, root)
+    
+        self.artistID = id_
+        self.music = music
+        
+        newRoot = Tk()
+        newRoot.title(name)
+        newRoot.geometry('800x500')
+
+        albums = self.music.artist_albums(self.artistID)
+
+        for i in albums.items():
+            if 'items' in i:
+                print('\n\n\n\n' + str(i) + '\n\n\n')
+# Finish sorting out album data types.
+                for x in i[i.index('items')]:
+                    pass
+        count = 1
+
+        print(albums)
+        
+        for i in range(len(albums)):
+            print(str(count) + '. ' + str(i))  
+
+    def createArtistButton(self, text, command, fg='black', width_='5', height_='2', justify='center', column_=1, row_=0, bg_='white'):
+        button = tk.Button(self.master, width=width_, height=height_, bg=bg_)
+        button['text'] = str(text)
+        button['fg'] = str(fg)
+        button['command'] = command
+        button['justify'] = justify
+        button.grid(column=column_, row=row_)
+
+        return button
+
+        
         
 
 root = Tk()
@@ -151,9 +206,12 @@ root.title('Kryptonica')
 root.geometry('800x500') # Make 1950x990
 
 tabControl = Notebook(root)
-welcome = Frame(tabControl)
+# Use this as tab creation (nb)
 
-tabControl.add(welcome, text='Welcome!')
+welcomeTab = Frame(tabControl)
+
+tabControl.add(welcomeTab, text='Welcome!')
+
 #tabControl.pack(expand=1, fill='both')
 
 # Implements background image (Include Image in package)
@@ -178,7 +236,7 @@ token = credentials.get_access_token()
 
 spotify = spotipy.Spotify(auth=token)
 
-app = Application(root, spotify, welcome)
+app = Application(root, spotify, welcomeTab, tabControl)
 
 root.mainloop()
 
