@@ -27,6 +27,9 @@
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
   <component name="RecentsManager">
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="$PROJECT_DIR$/pieces" />
+    </key>
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
@@ -43,7 +46,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.generate">
+  <component name="RunManager" selected="Python.chess">
     <configuration name="chess" type="PythonConfigurationType" factoryName="Python" temporary="true">
       <module name="PyChess" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -130,9 +133,9 @@
     </configuration>
     <recent_temporary>
       <list>
-        <item itemvalue="Python.generate" />
-        <item itemvalue="Python.start" />
         <item itemvalue="Python.chess" />
+        <item itemvalue="Python.start" />
+        <item itemvalue="Python.generate" />
         <item itemvalue="Python.scratch" />
       </list>
     </recent_temporary>
