@@ -11,9 +11,9 @@ class Gameplay():
         self.playerStart = True
         self.gameOn = True
 
+        self.startGame()
         Chess.Board.startBoard()
         self.generatePieces()
-        self.startGame()
 
     def generatePieces(self):
         from pieces.kingpiece import King
