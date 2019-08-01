@@ -16,6 +16,13 @@ class Bishop(Piece):
 
         self.colorString = chess.Chess.Color.relation[self.faction]
 
+        self.possibleUpLeft = []
+        self.possibleUpRight = []
+        self.possibleDownLeft = []
+        self.possibleDownRight = []
+
+        self.total = []
+
     def getAvailablePos(self, currentX, currentY):
         up = currentX
         down = 8 - currentX
@@ -97,14 +104,12 @@ class Bishop(Piece):
             else:
                 self.possibleDownRight.append([countX, countY])
 
-        self.total =  self.possibleUpLeft + self.possibleUpRight + self.possibleDownLeft + self.possibleDownRight
+        self.total = self.possibleUpLeft + self.possibleUpRight + self.possibleDownLeft + self.possibleDownRight
 
         if [currentX, currentY] in self.total:
             self.total.remove([currentX, currentY])
 
         return self.total
-
-
 
     def getBoard(self):
         self.board = chess.Chess.Board.board

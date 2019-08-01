@@ -24,28 +24,28 @@ class Gameplay():
         from pieces.pawnpiece import Pawn
 
         for king in range(1):
-            self.totalPlayerPieces.append(King(0))
-            self.totalOppPieces.append(King(1))
+            self.totalPlayerPieces.append([King(0), 0])
+            self.totalOppPieces.append([King(1), 0])
 
         for queen in range(1):
-            self.totalPlayerPieces.append(Queen(0))
-            self.totalOppPieces.append(Queen(1))
+            self.totalPlayerPieces.append([Queen(0), 1])
+            self.totalOppPieces.append([Queen(1), 1])
 
         for knight in range(2):
-            self.totalPlayerPieces.append(Knight(0))
-            self.totalOppPieces.append(Knight(1))
+            self.totalPlayerPieces.append([Knight(0), 2])
+            self.totalOppPieces.append([Knight(1), 2])
 
         for bishop in range(2):
-            self.totalPlayerPieces.append(Bishop(0))
-            self.totalOppPieces.append(Bishop(1))
+            self.totalPlayerPieces.append([Bishop(0), 3])
+            self.totalOppPieces.append([Bishop(1), 3])
 
         for rook in range(2):
-            self.totalPlayerPieces.append(Rook(0))
-            self.totalOppPieces.append(Rook(1))
+            self.totalPlayerPieces.append([Rook(0), 4])
+            self.totalOppPieces.append([Rook(1), 4])
 
         for pawn in range(8):
-            self.totalPlayerPieces.append(Pawn(0))
-            self.totalOppPieces.append(Pawn(1))
+            self.totalPlayerPieces.append([Pawn(0), 5])
+            self.totalOppPieces.append([Pawn(1), 5])
 
     def startGame(self):
         import chess

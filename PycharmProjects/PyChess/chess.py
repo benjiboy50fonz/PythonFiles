@@ -7,6 +7,8 @@ from gameplay.playermove import PlayerMove
 
 from board.generate import ChessBoard
 
+from pieces.piece import Piece
+
 
 class Chess:
     pass
@@ -34,10 +36,11 @@ Chess.Player = PlayerMove()
 Chess.totalPlayerPieces = Chess.Game.totalPlayerPieces
 Chess.totalOppPieces = Chess.Game.totalOppPieces
 
+Chess.Piece = Piece()
+
 from pieces.queenpiece import Queen
 
 rook = Queen(0)
 print(str(rook.getAvailablePos(3, 3)))
 
 Chess.Game.turnCycle()
-
