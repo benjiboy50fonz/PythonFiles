@@ -34,6 +34,9 @@ class Rook(Piece):
         self.possibleLeft = []
         self.possibleRight = []
 
+        currentX -= 1
+        currentY -= 1
+
         # NOTE: The following part is different for each individual pieces's move set.
 
         up = currentX
@@ -46,12 +49,14 @@ class Rook(Piece):
                 # THIS ACTUALLY SHOULD NOT BE USED. INVESTIGATE.
                 # This is the selected piece; you cannot move to yourself.
             elif self.board[row][currentY][1] == chess.Chess.Game.playerColor:
+                print('hmm ' + str(row))
                 self.possibleUp = []
                 # Checks to see if an allied piece
             elif self.board[row][currentY][1] == chess.Chess.Game.oppColor:
                 self.possibleUp = []
                 self.possibleUp.append([row, currentY])
             else:
+                print('added row ' + str(row))
                 self.possibleUp.append([row, currentY])
 
         for row in range(down):

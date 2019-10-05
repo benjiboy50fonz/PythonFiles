@@ -59,10 +59,11 @@ class PlayerMove:
         while idiot:
 
             moveX = str(input('\nWhat is the X value of the space you would like to move the ' + \
-                              pieceName[0].upper + pieceName[1:].lower() + ' to?: '))
+                              str(pieceName[0].upper()) + str(pieceName[1:].lower()) + ' to?: '))
+
 
             moveY = str(input('\nWhat is the Y value of the space you would like to move the ' + \
-                              pieceName[0].upper + pieceName[1:].lower() + ' to?: '))
+                              str(pieceName[0].upper()) + str(pieceName[1:].lower()) + ' to?: '))
             try:
                 if [int(moveX), int(moveY)] in possibilities:
                     self.setEmpty()  # sets your previous position as empty.

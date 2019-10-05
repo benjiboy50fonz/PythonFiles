@@ -9,6 +9,7 @@ from PIL import ImageTk, Image
 
 
 class Application(object):
+    
     def getInfo(self):
         print('\nMade by some teenager in Pennsylvania\n')
 
@@ -38,12 +39,14 @@ class Application(object):
 
         return input_
 
-    def createNewWindow(self, text, tab, id_):
+    def createNewArtistWindow(self, text, tab, id_):
         print('Button pressed')
         self.tabControl.add(tab, text=str(text))
 
         newTab = artistWindow(self.tabControl, str(text), self.music, id_)
 
+        self.allWindows.append(newTab)
+            
     def returnInput(self, inp):
         return str(inp.get())
 
@@ -60,7 +63,6 @@ class Application(object):
        # print(str(result.values()))
 
         dict_ = result
-        print(dict_.values())
 
         for i in result.values():
             # i is the three paragraph sections
@@ -87,7 +89,7 @@ class Application(object):
                         for y in list(x.items()):
                             for z in searchList:
                                 if str(z) == str(y[0]).strip():
-                                    print(str(z) + ' ' + str(y[0]))
+                                    #print(str(z) + ' ' + str(y[0]))
                                     if len(artistInfo) <= 3:
                                         artistInfo.append((str(z), str(y[1])))
                                     else:
@@ -96,7 +98,6 @@ class Application(object):
                # artistInfo.append(str(result[obj]))
 
         artistInfo = list(artistInfo)
-        print(str(artistInfo))
         artistInfo.sort()
 
         nameVar = 'Not Found. Try Again?'
@@ -136,14 +137,14 @@ class Application(object):
 
         artistFrame = Frame(self.tabControl)
 
-        enterArtistButton = self.createButton('Go To ' + str(nameVar), command= lambda: self.createNewWindow(nameVar, artistFrame, artistID), width_=str(len(nameVar) + 2), column_=1, row_=5, bg_='orange')
+        if not nameVar == 'Not Found. Try Again?':
 
+            enterArtistButton = self.createButton('Go To ' + str(nameVar), command= lambda: self.createNewArtistWindow(nameVar, artistFrame, artistID), width_=str(len(nameVar) + 2), column_=1, row_=5, bg_='orange')
+        
         
     def build(self):
         button1 = self.createButton('Info', self.getInfo, 'blue', column_=1, row_=0)
         killButton = self.createButton('Quit', self.kill, column_=1, row_=1, bg_='red')
-
-        
 
 
         self.label1 = self.createLabel(text='Info Button')
@@ -161,6 +162,9 @@ class Application(object):
         self.music = music
         self.build()
 
+        self.allWindows = []
+
+
 class artistWindow(Frame):
 
     def __init__(self, root, name, music, id_):
@@ -168,26 +172,122 @@ class artistWindow(Frame):
     
         self.artistID = id_
         self.music = music
+
+        self.musicPlaying = False
         
         newRoot = Tk()
+        self.newRoot = newRoot
         newRoot.title(name)
         newRoot.geometry('800x500')
 
         albums = self.music.artist_albums(self.artistID)
+        
+        # WORKING -------
+        
+        self.fiveRelatedArtists = self.fiveRelatedArtists()
+        emptyString = ''
+        
+        for i in range(5):
+            emptyString += str(i+1) + '. ' + str(self.fiveRelatedArtists[i] + '     \n')
 
+        self.fiveRelatedArtistText = 'Related Artists: \n' + emptyString 
+        
+        
+        self.topFiveTracks, self.topFiveIDs = self.fiveTopTracks()
+
+        self.topTrackIDRelation = []
+        
+        emptyString = ''
+        
+        for i in range(5):
+            emptyString += str(i+1) + '. ' + str(self.topFiveTracks[i] + '\n')
+
+        for i in range(5):
+            self.topTrackIDRelation.append((self.topFiveTracks[i], i, self.topFiveIDs[i]))
+
+        self.topFiveTracksText = 'Top Tracks: \n' + emptyString
+
+        # ---------------
+            
         for i in albums.items():
             if 'items' in i:
-                print('\n\n\n\n' + str(i) + '\n\n\n')
 # Finish sorting out album data types.
                 for x in i[i.index('items')]:
                     pass
         count = 1
-
-        print(albums)
         
-        for i in range(len(albums)):
-            print(str(count) + '. ' + str(i))  
+        #for i in range(len(albums)):
+         #   print(str(count) + '. ' + str(i))
 
+        self.buildArtistWindow()
+
+    def buildArtistWindow(self):
+        relatedArtistLabel = self.createLabel(self.fiveRelatedArtistText)
+        topFiveTracksLabel = self.createLabel(self.topFiveTracksText, 1, 0)
+
+        stopPlaying = self.createButton('Pause Music', lambda: self.pauseMusic(), row_=8, width_=10, column_=1, bg_='red')
+
+        self.createFivePlayButtons()
+
+    def createFivePlayButtons(self):
+        labelOne = self.createLabel('Play Top Hits:', 0, 2)
+        
+        buttonOne = self.createButton('Play: ' + str(self.topTrackIDRelation[0][0]), lambda: self.playTrack(self.topTrackIDRelation[0][2]), width_=len(str(self.topTrackIDRelation[0][0])) + 2, height_='1', column_=0, row_=3)
+        buttonTwo = self.createButton('Play: ' + str(self.topTrackIDRelation[1][0]), lambda: self.playTrack(self.topTrackIDRelation[1][2]), width_=len(str(self.topTrackIDRelation[1][0])) + 2, height_='1', column_=0, row_=4)
+        buttonThree = self.createButton('Play: ' + str(self.topTrackIDRelation[2][0]), lambda: self.playTrack(self.topTrackIDRelation[2][2]), width_=len(str(self.topTrackIDRelation[2][0])) + 2, height_='1', column_=0, row_=5)
+        buttonFour = self.createButton('Play: ' + str(self.topTrackIDRelation[3][0]), lambda: self.playTrack(self.topTrackIDRelation[3][2]), width_=len(str(self.topTrackIDRelation[3][0])) + 2, height_='1', column_=0, row_=6)
+        buttonFive = self.createButton('Play: ' + str(self.topTrackIDRelation[4][0]), lambda: self.playTrack(self.topTrackIDRelation[4][2]), width_=len(str(self.topTrackIDRelation[4][0])) + 2, height_='1', column_=0, row_=7)
+
+    def createButton(self, text, command, fg='black', width_='5', height_='2', justify='center', column_=1, row_=0, bg_='white'):
+        button = tk.Button(self.newRoot, width=width_, height=height_, bg=bg_)
+        button['text'] = str(text)
+        button['fg'] = str(fg)
+        button['command'] = command
+        button['justify'] = justify
+        button.grid(column=column_, row=row_)
+
+    def createLabel(self, text, column_=0, row_=0):
+        lbl = Label(self.newRoot, text=str(text))
+        lbl.grid(column=column_, row=row_)
+
+        return lbl
+
+    def pauseMusic(self):
+        if self.musicPlaying:
+            self.music.pause_playback()
+
+    def playTrack(self, id_=0):
+        list_ = self.music.audio_features(id_)
+
+        self.music.start_playback(uris=list(list_[0]['uri']))
+        self.musicPlaying = False
+            
+    def fiveTopTracks(self):
+        topTracks = self.music.artist_top_tracks(self.artistID)
+
+        topTrackList = []
+        topTrackIDList = []
+
+        for dict_ in topTracks['tracks']:
+            topTrackList.append(dict_['name'])
+            topTrackIDList.append(dict_['id'])
+
+        return topTrackList[0:5], topTrackIDList[0:5]
+
+    def fiveRelatedArtists(self):
+        import random
+                    
+        relatedArtists = self.music.artist_related_artists(self.artistID)
+        relatedArtistsList = []
+        
+        for dict_ in relatedArtists['artists']:
+            relatedArtistsList.append(dict_['name'])
+
+        # gets five random artists from the list and returns them.
+        value = random.sample(relatedArtistsList, len(relatedArtistsList))
+        
+        return value[0:5]
+        
     def createArtistButton(self, text, command, fg='black', width_='5', height_='2', justify='center', column_=1, row_=0, bg_='white'):
         button = tk.Button(self.master, width=width_, height=height_, bg=bg_)
         button['text'] = str(text)

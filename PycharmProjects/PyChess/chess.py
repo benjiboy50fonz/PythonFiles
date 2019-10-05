@@ -38,9 +38,9 @@ Chess.totalOppPieces = Chess.Game.totalOppPieces
 
 Chess.Piece = Piece()
 
-from pieces.queenpiece import Queen
+from pieces.rookpiece import Rook
 
-rook = Queen(0)
+rook = Rook(0)
 print(str(rook.getAvailablePos(3, 3)))
 
 Chess.Game.turnCycle()
