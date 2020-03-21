@@ -17,16 +17,25 @@ class TextAdventureGameEngine(CustomErrors):
                 
     def __init__(self, startRoom, startMap, searchables=[], allowBack=True, defaultDirections=None):
         super().__init__()
-        
-        self.errorEngine = CustomErrors()
-        
+            
         self.startRoom = startRoom
         self.startMap = startMap
+        
+        self.lastMove = ''
+        
+        self.moveRelations = {'right' : 'r',
+                              'left' : 'l',
+                              'forward' : 'f',
+                              'back' : 'b'
+                             }
         
         if not isinstance(self.startRoom, Room):
             raise self.INVALIDOBJECT('Please pass an object of the Room class!')
         
         self.currentRoom = self.startRoom.name
+        self.currentRoomObj = self.startRoom
+        
+        self.currentMap = self.startMap
         
         if not isinstance(self.startMap, RoomCluster):
             raise self.INVALIDOBJECT('Please pass an object of the RoomCluster class!')
@@ -36,6 +45,7 @@ class TextAdventureGameEngine(CustomErrors):
                 self.currentX = row.index(self.startRoom) # Finds the x position by looking at each row in self.startMap, and trying to find the self.startRoom. 
                 self.currentY = self.startMap.map_.index(row) # Finds the y position by looking for the specific row in the self.startMap. 
                 break
+            
             except(ValueError):
                 pass
         
@@ -100,21 +110,160 @@ class TextAdventureGameEngine(CustomErrors):
         
     def move(self, rawEntry):
         # Check for valid directions
-        for char in str(dirString.lower()).strip():
+        
+        directions = self.currentRoomObj.dirString
+        
+        for char in str(directions.lower()).strip():
             if char not in self.globalKnowns:
                 raise self.INVALIDDIRECTIONSTRING('Invalid character in string. Please refer to the global characters.') # Raise a custom, invalid direction string error
             
         normalizedEntry = self.interpretDirection(rawEntry)
         
+        if normalizedEntry is self.globalUnknown:
+            return 2
+        
+        elif (normalizedEntry not in directions):
+            return 3
+        
+        elif normalizedEntry in directions:
+            res, newRoom = self.moveIfPossible(normalizedEntry)
+            if res and (newRoom is not None and newRoom is not False): # checks for a successful exit and a non-pseudo newRoom object.
+                newRoom.enterRoom()
+                
+        
+    def moveIfPossible(self, entry, move=True):
+        
+        entryToMethod = {'f' : 'forward',
+                         'l' : 'left', 
+                         'r' : 'right',
+                         'b' : 'back'
+                             }
+        
+        # Interpret the entry so we can use it with the previous move. 
+        
+        newMove = entryToMethod[entry]
+        
+        # Determine directions based off of which way we're facing. 
+        
+        if self.lastMove == 'l':
+            
+            self.moveRelations = {'right' : 'f',
+                                  'left' : 'b',
+                                  'forward' : 'l',
+                                  'back' : 'b'
+                                 }
+            
+        elif self.lastMove == 'r':
+            
+            self.moveRelations = {'right' : 'b',
+                                  'left' : 'f',
+                                  'forward' : 'r',
+                                  'back' : 'l'
+                                 }
+            
+        elif self.lastMove == 'b':
+            
+            self.moveRelations = {'right' : 'l',
+                                  'left' : 'r',
+                                  'forward' : 'b',
+                                  'back' : 'f'
+                                 }
+            
+        else:
+            self.moveRelations = {'right' : 'r',
+                                  'left' : 'l',
+                                  'forward' : 'f',
+                                  'back' : 'b'
+                                 }
+            
+        realDirection = self.moveRelations[newMove]
+        
+        
+        x, y = self.getAndUpdateIndexes(self.currentMap, self.currentRoomObj) # Remember, currentMap is actually an object! Call the property map_!
+
+        
+        if realDirection == 'l':
+            
+            try: 
+                
+                possible = (self.currentMap.map_[y][x - 1]).name
+                if not move:
+                    return True # If you just wanted to see if it's possible, end now!
+                self.currentRoom = (self.currentMap.map_[y][x - 1]).name
+                self.currentRoomObj = (self.currentMap.map_[y][x - 1])
+                
+                newX, newY = self.getAndUpdateIndexes(self.currentMap, self.currentRoomObj)
+                
+            except(KeyError):
+                return False
+        
+        elif realDirection == 'r':
+            
+            try: 
+                
+                possible = (self.currentMap.map_[y][x + 1]).name
+                if not move:
+                    return True # If you just wanted to see if it's possible, end now!
+                self.currentRoom = (self.currentMap.map_[y][x + 1]).name
+                self.currentRoomObj = (self.currentMap.map_[y][x + 1])
+                
+                newX, newY = self.getAndUpdateIndexes(self.currentMap, self.currentRoomObj)
+                
+            except(KeyError):
+                return False
+                
+        elif realDirection == 'b':
+            
+            try: 
+                
+                possible = (self.currentMap.map_[y + 1][x]).name
+                if not move:
+                    return True # If you just wanted to see if it's possible, end now!
+                self.currentRoom = (self.currentMap.map_[y + 1][x]).name
+                self.currentRoomObj = (self.currentMap.map_[y + 1][x])
+                
+                newX, newY = self.getAndUpdateIndexes(self.currentMap, self.currentRoomObj)
+                
+            except(KeyError):
+                return False
+            
+        elif realDirection == 'f':
+                
+            try: 
+                
+                possible = (self.currentMap.map_[y - 1][x]).name
+                if not move:
+                    return True # If you just wanted to see if it's possible, end now!
+                self.currentRoom = (self.currentMap.map_[y - 1][x]).name
+                self.currentRoomObj = (self.currentMap.map_[y - 1][x])
+                
+                newX, newY = self.getAndUpdateIndexes(self.currentMap, self.currentRoomObj)                
+            
+            except(KeyError):
+                return False
+            
+        # Updates the last move after a successful move. 
+            
+        self.lastMove = realDirection
+        
+        return True, (self.currentMap.map_[newY][newX]) # returns true because it was successful and the new room object
+        
+        
+    def updateLastMove(self, dir_):
+        self.lastMove = dir_
 
 def fp(text):
     print('\n' + str(text))
 
-room1 = Room('Room One', 'flr', 'Welcome to Room 1')
-room2 = Room('Room Two', 'lfr', 'Welcome to Room 2')
+room1 = Room('Room One', 'fr', 'Welcome to Room 1')
+room2 = Room('Room Two', 'lf', 'Welcome to Room 2', 'l', actionText='Wowza')
+room3 = Room('Room Three', 'f', 'Welcome to Room 3!')
 
-map1 = [[room1, room2]]       
+map1 = [[room1, room2],
+        [0,     room3]]   
+
+room2.enterRoom()
 
 cluster1 = RoomCluster(map1)
     
-obj = TextAdventureGameEngine(room1, cluster1)
+obj = TextAdventureGameEngine(room3, cluster1)
