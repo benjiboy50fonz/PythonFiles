@@ -8,6 +8,8 @@ class Room(CustomErrors):
         
         super().__init__()
         
+        self.containing = []
+        
         self.stringToAction = {'l' : 'self.lootRoom(char)',
                                'f' : 'self.fightInRoom(char)',
                                'c' : 'self.customAction(char)',

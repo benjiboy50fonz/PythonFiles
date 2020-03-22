@@ -181,7 +181,6 @@ class TextAdventureGameEngine(CustomErrors):
         
         x, y = self.getAndUpdateIndexes(self.currentMap, self.currentRoomObj) # Remember, currentMap is actually an object! Call the property map_!
 
-        
         if realDirection == 'l':
             
             try: 
@@ -256,14 +255,14 @@ def fp(text):
     print('\n' + str(text))
 
 room1 = Room('Room One', 'fr', 'Welcome to Room 1')
-room2 = Room('Room Two', 'lf', 'Welcome to Room 2', 'l', actionText='Wowza')
+room2 = Room('Room Two', 'lf', 'Welcome to Room 2', 'l', actionText='Would you like to loot the room?')
 room3 = Room('Room Three', 'f', 'Welcome to Room 3!')
 
 map1 = [[room1, room2],
         [0,     room3]]   
 
-room2.enterRoom()
-
 cluster1 = RoomCluster(map1)
     
 obj = TextAdventureGameEngine(room3, cluster1)
+
+obj.move('forward')
