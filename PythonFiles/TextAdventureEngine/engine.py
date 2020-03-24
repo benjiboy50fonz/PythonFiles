@@ -1,7 +1,12 @@
+#!/usr/bin/env python3
+
 from customerrors import CustomErrors
 
 from room import Room
 from roomcluster import RoomCluster
+
+from ConsumablesCharacters.enemy import EnemyType
+from ConsumablesCharacters.lootroom import LootRoom
 
 class TextAdventureGameEngine(CustomErrors):
     
@@ -17,6 +22,8 @@ class TextAdventureGameEngine(CustomErrors):
                 
     def __init__(self, startRoom, startMap, searchables=[], allowBack=True, defaultDirections=None):
         super().__init__()
+            
+        self.points = 0
             
         self.startRoom = startRoom
         self.startMap = startMap
@@ -128,6 +135,7 @@ class TextAdventureGameEngine(CustomErrors):
         elif normalizedEntry in directions:
             res, newRoom = self.moveIfPossible(normalizedEntry)
             if res and (newRoom is not None and newRoom is not False): # checks for a successful exit and a non-pseudo newRoom object.
+                self.movesMade += 1
                 newRoom.enterRoom()
                 
         
@@ -146,6 +154,7 @@ class TextAdventureGameEngine(CustomErrors):
         # Determine directions based off of which way we're facing. 
         
         if self.lastMove == 'l':
+            
             
             self.moveRelations = {'right' : 'f',
                                   'left' : 'b',
@@ -253,13 +262,20 @@ class TextAdventureGameEngine(CustomErrors):
 
 def fp(text):
     print('\n' + str(text))
-
+    
 room1 = Room('Room One', 'fr', 'Welcome to Room 1')
 room2 = Room('Room Two', 'lf', 'Welcome to Room 2', 'l', actionText='Would you like to loot the room?')
 room3 = Room('Room Three', 'f', 'Welcome to Room 3!')
 
+
 map1 = [[room1, room2],
         [0,     room3]]   
+
+room1Loot = LootRoom('Ammo', room2, 'You find and open an ammo crate!', 10, lootOnEnter=True)
+
+enemy1 = EnemyType(5, damageWithClose=2, skillLevel=25, pointsPerKill=15)
+
+room1Loot.displayInventory()
 
 cluster1 = RoomCluster(map1)
     

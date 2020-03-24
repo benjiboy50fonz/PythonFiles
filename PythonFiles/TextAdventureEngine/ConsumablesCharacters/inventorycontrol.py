@@ -30,8 +30,7 @@ class InventoryControl(CustomErrors):
                 
             self.findAndAdd(name, quantity)
             
-        except(TypeError):
-            print('LOOK HERE! INFINTE SPACE? REALLY?')
+        except(TypeError): # There must be infinite space, so ignore the limit.
             self.findAndAdd(name, quantity)
             
     def findAndAdd(self, name, quantity):
@@ -40,13 +39,19 @@ class InventoryControl(CustomErrors):
         else:
             self.inventory[name] = quantity
             
+        fp('Successfully added!')
+            
         self.updateVacancy()
             
     def updateVacancy(self):
-        self.vacantSpace = self.maxCapacity - sum(self.inventory.values())
+        try:
+            self.vacantSpace = self.maxCapacity - sum(self.inventory.values())
         
-        if self.vacantSpace < 0:
-            raise self.YOUBROKETHEINVENTORY('You somehow have more than the allowed number of items. Backend, investigate!')
+            if self.vacantSpace < 0:
+                raise self.YOUBROKETHEINVENTORY('You somehow have more than the allowed number of items. Backend, investigate!')
+            
+        except(AttributeError):
+            pass
                                    
     def removeObject(self, name, quantity=1):
         if name in self.inventory.keys():
@@ -65,15 +70,16 @@ class InventoryControl(CustomErrors):
             print('Vacant Spots: ' + str(self.vacantSpace))
             for set_ in self.inventory.items():
                 print('Name ' + str(set_[0]) + ' Quantity: ' + str(set_[1]))
-                
             print('------------------------')
-        except(TypeError):
-            print('------------------------')
+            
+        except(AttributeError):
             print('Max Capacity: No limit.')
             print('Vacant Spots: No limit.')
-            for set_ in self.inventory.items():
-                print('Name ' + str(set_[0]) + ' Quantity: ' + str(set_[1]))
-                
+            if len(self.inventory.keys()) == 0:
+                print('Your Inventory is Empty!')
+            else:
+                for set_ in self.inventory.items():
+                    print('Name ' + str(set_[0]) + ' Quantity: ' + str(set_[1]))
             print('------------------------')
             
     def clearDictionary(self):
