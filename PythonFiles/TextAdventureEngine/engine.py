@@ -6,7 +6,10 @@ from room import Room
 from roomcluster import RoomCluster
 
 from ConsumablesCharacters.enemy import EnemyType
+from ConsumablesCharacters.newenemy import NewEnemy
+
 from ConsumablesCharacters.lootroom import LootRoom
+from ConsumablesCharacters.inventorycontrol import InventoryControl
 
 class TextAdventureGameEngine(CustomErrors):
     
@@ -18,6 +21,8 @@ class TextAdventureGameEngine(CustomErrors):
     Back: 'b'
     Unknown: '!'
     '''
+    
+    inventoryManager = InventoryControl()
 
                 
     def __init__(self, startRoom, startMap, searchables=[], allowBack=True, defaultDirections=None):
@@ -259,6 +264,9 @@ class TextAdventureGameEngine(CustomErrors):
         
     def updateLastMove(self, dir_):
         self.lastMove = dir_
+        
+    def displayInventory(self):
+        self.inventoryManager.displayInventory()
 
 def fp(text):
     print('\n' + str(text))
@@ -273,12 +281,14 @@ map1 = [[room1, room2],
 
 room1Loot = LootRoom('Ammo', room2, 'You find and open an ammo crate!', 10, lootOnEnter=True)
 
-enemy1 = EnemyType(5, damageWithClose=2, skillLevel=25, pointsPerKill=15)
+enemyType1 = EnemyType('pseudoid', 5, damageWithClose=2, skillLevel=25, pointsPerKill=15)
 
-room1Loot.displayInventory()
+enemy1 = NewEnemy('pseudoid')
+
+print(enemy1.counterClose())
 
 cluster1 = RoomCluster(map1)
-    
+
 obj = TextAdventureGameEngine(room3, cluster1)
 
 obj.move('forward')

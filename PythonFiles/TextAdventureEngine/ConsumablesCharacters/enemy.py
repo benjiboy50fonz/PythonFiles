@@ -1,5 +1,6 @@
 import sys
 import random
+import weakref
 
 sys.path.insert(1, '/home/benji/Git/PythonFiles/PythonFiles/TextAdventureEngine') # Allows an import of the custom error and room stuff.
 
@@ -19,7 +20,8 @@ class EnemyType(CustomErrors):
     globalDefaultSkillLevel = 0.4
     globalDefaultPointsPerKill = 10
     
-    enemyTypes = {'ene' : []}
+    enemyTypes = {}
+    _idToObj = {}
     
     def __init__(self, id_, healthWithArmor='def', damageWithClose=None, damageWithFar=None, skillLevel='def', pointsPerKill='def', accessClass=False):
         
@@ -29,11 +31,10 @@ class EnemyType(CustomErrors):
         '''
         
         super().__init__()
+        
 
-        if not accessClass:
-            
-            self.enemyTypes[id_] = [healthWithArmor, damageWithClose, damageWithFar, skillLevel, pointsPerKill]
-            
+        if accessClass:
+                    
             self.hidden = False
             
             self.damageWithClose = damageWithClose
@@ -56,11 +57,11 @@ class EnemyType(CustomErrors):
                 self.pointsPerKill = self.globalDefaultPointsPerKill
             else:
                 self.pointsPerKill = pointsPerKill
-            
-            if damageWithClose != None and type(damageWithClose) == int and damageWithFar == None:
+                        
+            if type(damageWithClose) == int and damageWithFar == None:
                 self.setupCloseEnemy()
                 
-            elif damageWithFar != None and type(damageWithFar) == int and damageWithClose == None:
+            elif type(damageWithFar) == int and damageWithClose == None:
                 self.setupFarEnemy()
             
             elif type(damageWithFar) == int and type(damageWithClose) == int:
@@ -70,6 +71,31 @@ class EnemyType(CustomErrors):
                 raise self.INVALIDSTRINGGIVEN('Please provide the damage for the close or far, depending on which you\'d like, or both for a very versatile enemy!')
             
             self.sl = self.assignActualChances()
+       
+            self.appendSelfToObjects(id_)
+            
+            print('breh ' + str(self._idToObj))
+            
+        else:
+            self.enemyTypes[id_] = [healthWithArmor, damageWithClose, damageWithFar, skillLevel, pointsPerKill]
+
+
+    def appendSelfToObjects(self, _id):
+        self._idToObj[_id] = weakref.ref(self)
+        
+    def getinstances(self):
+        dead = set()
+        for ref in set(self._idToObj.values()):
+            obj = ref()
+            if obj is not None:
+                yield obj
+            else:
+                dead.add(ref)
+        
+        for object in dead:
+            self._idToObj.pop(object)
+
+        return self._idToObj
         
     def getListOfEnemies(self):
         return self.enemyTypes
@@ -126,7 +152,7 @@ class EnemyType(CustomErrors):
             damage = self.d * random.uniform(0.35, 0.65)
             return True, damage
         return False, 0
-    
+     
     def counterWithDistance(self, dist):
         if dist == 'far':
             if self.odds(-0.05):
@@ -186,6 +212,7 @@ class EnemyType(CustomErrors):
     def dieAndDrop(self, provideLoot=None):
         if type(provideLoot) == str:
             return provideLoot
+        
         # Call this in the engine die function, then actually kill the object.
         
 

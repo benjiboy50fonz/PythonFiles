@@ -23,10 +23,10 @@ class CustomErrors:
         
         class SkillLevelNotPossible(Exception):
             pass
-
-        class EnemyTypeDoesNotExist(Exception):
+        
+        class InventoryItemsWithTheSameNameDoNotMatch(Exception):
             pass
-
+        
         self.INVALIDDIRECTIONSTRING = InvalidDirectionString
         self.INVALIDMAPTYPE = InvalidMapType
         self.INVALIDOBJECT = InvalidObject
@@ -35,4 +35,10 @@ class CustomErrors:
         self.INVALIDSTRINGGIVEN = InvalidStringGiven
         self.TWONONETYPESGIVEN = TwoNoneTypesGiven
         self.SKILLLEVELNOTPOSSIBLE = SkillLevelNotPossible
+        self.INVENTORYITEMSWITHTHESAMENAMEDONOTMATCH = InventoryItemsWithTheSameNameDoNotMatch
+
+    def safeDeclare(self):
+        class EnemyTypeDoesNotExist(Exception):
+            pass
+        
         self.ENEMYTYPEDOESNOTEXIST = EnemyTypeDoesNotExist

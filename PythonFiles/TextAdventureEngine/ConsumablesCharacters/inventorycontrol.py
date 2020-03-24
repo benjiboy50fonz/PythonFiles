@@ -22,22 +22,24 @@ class InventoryControl(CustomErrors):
             
         self.inventory = {}    
         
-    def appendObject(self, name, quantity=1):
+    def appendObject(self, name, quantity=1, weapon=None, damageIfWeapon=None): # NOTE: WEAPON BOOLS ARE TRUE FOR CLOSE, FALSE FOR FAR, AND NONE FOR N/A
         try:
             if quantity > self.vacantSpace: # Gets the remaining space that is vacant. 
                 quantity = self.vacantSpace # Says that you can only pickup and the max amount, and only allows that much. 
                 self.vacantSpace = 0 
                 
-            self.findAndAdd(name, quantity)
+            self.findAndAdd(name, quantity, weapon, damageIfWeapon)
             
         except(TypeError): # There must be infinite space, so ignore the limit.
-            self.findAndAdd(name, quantity)
+            self.findAndAdd(name, quantity, weapon, damageIfWeapon)
             
-    def findAndAdd(self, name, quantity):
+    def findAndAdd(self, name, quantity, weapon, damageIfWeapon):
         if name in self.inventory.keys():
-            self.inventory[name] += quantity
+            self.inventory[name][0] += quantity
+            if weapon != self.inventory[name][1] or damageIfWeapon != self.inventory[name][2]:
+                raise self.INVENTORYITEMSWITHTHESAMENAMEDONOTMATCH('Please make sure that if two items have the same name, their statuses are the same!')
         else:
-            self.inventory[name] = quantity
+            self.inventory[name] = [quantity, weapon, damageIfWeapon]
             
         fp('Successfully added!')
             
@@ -69,7 +71,7 @@ class InventoryControl(CustomErrors):
             print('Max Capacity: ' + str(self.maxCapacity))
             print('Vacant Spots: ' + str(self.vacantSpace))
             for set_ in self.inventory.items():
-                print('Name ' + str(set_[0]) + ' Quantity: ' + str(set_[1]))
+                print('Name ' + str(set_[0]) + ' Quantity: ' + str(set_[1][0]))
             print('------------------------')
             
         except(AttributeError):
@@ -84,6 +86,9 @@ class InventoryControl(CustomErrors):
             
     def clearDictionary(self):
         self.inventory.clear()
+        
+    def getInventory(self):
+        return self.inventory
         
     def setMaxCapacity(self, num):
         if sum(self.inventory.values()) > num:
