@@ -7,6 +7,7 @@ from roomcluster import RoomCluster
 
 from ConsumablesCharacters.enemy import EnemyType
 from ConsumablesCharacters.newenemy import NewEnemy
+from ConsumablesCharacters.player import Player
 
 from ConsumablesCharacters.lootroom import LootRoom
 from ConsumablesCharacters.inventorycontrol import InventoryControl
@@ -23,7 +24,8 @@ class TextAdventureGameEngine(CustomErrors):
     '''
     
     inventoryManager = InventoryControl()
-
+    
+    player = Player()
                 
     def __init__(self, startRoom, startMap, searchables=[], allowBack=True, defaultDirections=None):
         super().__init__()
@@ -261,6 +263,20 @@ class TextAdventureGameEngine(CustomErrors):
         
         return True, (self.currentMap.map_[newY][newX]) # returns true because it was successful and the new room object
         
+    def fight(self, enemies: list, range_=None, playerAttacksFirst=True):
+        
+        for enemy in enemies:
+            if not isinstance(enemy, NewEnemy):
+                raise self.INVALIDOBJECT('Please make sure all enemies in the list are instances of the NewEnemy class.')
+            
+        self.player.beginFight(playerAttacksFirst, range_)
+            
+        if playerAttacksFirst:
+            self.player.focusOnEnemy(enemies)
+        
+        else:
+            pass
+        
         
     def updateLastMove(self, dir_):
         self.lastMove = dir_
@@ -275,7 +291,6 @@ room1 = Room('Room One', 'fr', 'Welcome to Room 1')
 room2 = Room('Room Two', 'lf', 'Welcome to Room 2', 'l', actionText='Would you like to loot the room?')
 room3 = Room('Room Three', 'f', 'Welcome to Room 3!')
 
-
 map1 = [[room1, room2],
         [0,     room3]]   
 
@@ -285,10 +300,12 @@ enemyType1 = EnemyType('pseudoid', 5, damageWithClose=2, skillLevel=25, pointsPe
 
 enemy1 = NewEnemy('pseudoid')
 
+enemy2 = NewEnemy('pseudoid')
+
 print(enemy1.counterClose())
 
 cluster1 = RoomCluster(map1)
 
 obj = TextAdventureGameEngine(room3, cluster1)
 
-obj.move('forward')
+obj.fight([enemy1, enemy2], True)

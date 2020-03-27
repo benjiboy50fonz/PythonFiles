@@ -20,7 +20,9 @@ class InventoryControl(CustomErrors):
             self.maxCapacity = int(sizeLimit)
             self.vacantSpace = self.maxCapacity
             
-        self.inventory = {}    
+        self.inventory = {'sword' : [1, True, 7],
+                          'gun' : [1, False, 10],
+                          'chocolate bar' : [2, None]}    
         
     def appendObject(self, name, quantity=1, weapon=None, damageIfWeapon=None): # NOTE: WEAPON BOOLS ARE TRUE FOR CLOSE, FALSE FOR FAR, AND NONE FOR N/A
         try:

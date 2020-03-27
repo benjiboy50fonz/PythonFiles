@@ -27,6 +27,9 @@ class CustomErrors:
         class InventoryItemsWithTheSameNameDoNotMatch(Exception):
             pass
         
+        class InvalidWeaponRangeProvided(Exception):
+            pass
+        
         self.INVALIDDIRECTIONSTRING = InvalidDirectionString
         self.INVALIDMAPTYPE = InvalidMapType
         self.INVALIDOBJECT = InvalidObject
@@ -36,6 +39,7 @@ class CustomErrors:
         self.TWONONETYPESGIVEN = TwoNoneTypesGiven
         self.SKILLLEVELNOTPOSSIBLE = SkillLevelNotPossible
         self.INVENTORYITEMSWITHTHESAMENAMEDONOTMATCH = InventoryItemsWithTheSameNameDoNotMatch
+        self.INVALIDWEAPONRANGEPROVIDED = InvalidWeaponRangeProvided
 
     def safeDeclare(self):
         class EnemyTypeDoesNotExist(Exception):
