@@ -6,6 +6,8 @@ A calculator app for my Arch raspberry pi, even though it definitley has one!
 
 import math
 
+import re
+
 import tkinter as tk
 
 from tkinter import ttk
@@ -237,13 +239,12 @@ class EquationSolver(tk.Frame):
         
         self.operators = ['+', '-', '*', '/']
         
-        self.operatorFunctions = {'+' : self.add,
-                                  '-' : self.sub,
-                                  '*' : self.mult,
-                                  '/' : self.div}
-        
         self.equation = ''
         self.variables = []
+        
+        self.leftSideTerms = []
+        self.rightSideTerms = []
+        self.terms = []
         
         self.customLabels = []
         self.customEntries = []
@@ -251,6 +252,7 @@ class EquationSolver(tk.Frame):
         self.varsAndEnties = []
         
         self.buildStandardWidgets()
+        
     def reset(self):
         self.equation = ''
         self.variables = []
@@ -291,8 +293,8 @@ class EquationSolver(tk.Frame):
                 if char not in self.variables:
                     self.variables.append(char)
                             
-        for char in self.equation: # Removes white space that the strip() could not clear.
-            if char == ' ':
+            # Removes white space that the strip() could not clear.
+            elif char == ' ':
                 self.equation = self.equation[:(self.equation.index(' '))] + self.equation[(self.equation.index(' ') + 1):]
                 print(self.equation)
                     
@@ -312,116 +314,145 @@ class EquationSolver(tk.Frame):
             
         self.submitVars.grid(row=rowCount, column=0)
         self.resultLabel.grid(row=rowCount + 1, column=0)
-            
+        
+    def findVarEnd(self, term, startWith=-1):
+        while term[startWith] in self.legalAlphabet:
+            startWith -= 1
+
+        return startWith + 1
+        
     def getEntries(self):
-        for var, entrySpace in zip(self.variables, self.customEntries):
-            self.replace(var)
-                        
-    def replace(self, variable):
-        count = 0
-        for char in str(self.equation):
-            if char == str(variable):
-                print('here')
-                index = self.equation.index(char, count)
+        signCount = 0
+        for char in self.equation:
+            if char == '=':
+                signCount += 1
+            
+        if signCount > 1:
+            return False
                 
+        separatedLeft = re.split('[+*/-]', self.equation.split('=')[0]) # This was NOT fun.
+        separatedRight = re.split('[+*/-]', self.equation.split('=')[1])
+        
+        termID = 0
+        for term in separatedLeft:
+            gotit = False
+            if term[-1] in self.legalAlphabet: # Makes sure its a variable
+                i = self.findVarEnd(term)
                 
+                obj = Term(str(term)[:i], False, termID, str(term)[i:])
                 
+                self.terms.append(obj)
+                self.leftSideTerms.append(obj)
+                gotit = True
                 
-                # This mumbled shit fucking sucks. Going to rewrite
-                
-                #try:
-                    #if self.equation[index - 1] in self.legalAlphabet:
-                        #if self.equation[index - 1] == char: # Check variables to square itself.
-                            #self.equation = self.equation[:(index - 1)] + str(char) + '**2' + self.equation[(index + 1):] # Up to, but not including!
-                #except(IndexError):
-                    #pass
-                                    
-                
-                #try:
-                    #print('index = ' + str(index))
-                    #if (self.equation[index - 1] not in self.legalAlphabet and self.equation[index + 1] not in self.legalAlphabet) and self.equation[index - 2] == char: # Looks to combine like terms between the current character and ones two spaces behind itself.
-                        #print('wellll')
-                        #operator = self.equation[index - 1]
-                        #other = self.equation[index - 2]
+            try:
+                if not gotit and math.isfinite(int(term[-1])): # No variable, does not need i because they would all be nums. 3x4 is not a thing, but 34 is lol
+                    obj = Term(str(term), False, termID)
                     
-                        #coefs = False
+                    self.terms.append(obj)
+                    self.leftSideTerms.append(obj)
+                
+            except(TypeError):
+                print('Error line 347')
+                
+            termID += 1
+        
+        termID = 0
+        for term in separatedRight:
+            gotit = False
+            if term[-1] in self.legalAlphabet: # Makes sure its a variable
+                i = self.findVarEnd(term)
+                obj = Term(str(term)[:i], True, termID, str(term)[i:])
                     
-                        #if self.equation[index - 3] not in self.legalAlphabet or self.equation[index - 3] not in self.operators: # Looks to see if the like term has a coefficient
-                            #digitIndexer = 3
-                            #digitCount = 1
-                            #try:
-                                #checking = True
-                                #while checking:
-                                    #if self.equation[index - digitIndexer] not in self.legalAlphabet or self.equation[index - digitIndexer] not in self.operators:
-                                        #digitIndexer += 1
-                                        #digitCount += 1
-                                    #else:
-                                        #checking = False
-                            #except(IndexError, TypeError):
-                                #checking = False
-                                #digitIndexer -= 1 
-                                        
-                            #other = self.equation[(index - digitIndexer):((index - digitIndexer) + digitCount)]
-                            #coefs = True
-                            
-                        #final = self.operatorFunctions[self.equation[index - 1]](char, other, coefs, True)
-                        
-                        #self.equation = self.equation[:(index - digitIndexer) + 1] + '+' + final + '+' + self.equation[(index + 1):]
-                                                        
-                #except(IndexError):
-                    #print('FUCK')
-                    #pass
-
-            #print(self.equation)
-            #count += 1
-
-
-    def add(self, main, other, coefs=False, invert=False):
-        oldMain = main
-        if not coefs:
-            return '2' + str(main)
+                self.terms.append(obj)
+                self.rightSideTerms.append(obj)
+                gotit = True
+                
+            try:
+                if not gotit and math.isfinite(int(term[-1])): # No variable
+                    obj = Term(str(term), True, termID)
+                    
+                    self.terms.append(obj)
+                    self.rightSideTerms.append(obj)
+                
+            except(TypeError):
+                print('Error line 360')
+                
+            termID += 1
+                
+                
+    def getOpBetween(self, other):
+        pass
+                
+                
+    def combineLikeTerms(self):
+        '''
+        We have to be careful with this because we can't just willy-nilly combine like terms; instead, we must find the like terms on each side, then perform valid operations between them.
+        '''
+        duplicate = self.terms
+        for term in self.terms:
+            for termTwo in duplicate:
+                if term is termTwo:
+                    pass
+                else:
+                    if term.equalSignSide == termTwo.equalSignSide and term.termType == termTwo.termType and abs(term.termID - termTwo.termID) == 1: # Term ID is used to find out if the terms are next to each other. Look at constructor for more info.
+                        pass
+            
+    
+class Term:
+    
+    def __init__(self, coefficient, sideOfSign, termID, variable=None):
+        self.coefficient = coefficient # coefficient can be a constant; just leave the variable argument as default!
+        
+        self.equalSignSide = sideOfSign # Left is False, and right is True
+        
+        self.termID = termID # the position of this term, relative to the others on that side, starting at zero.
+        
+        if variable is None:
+            self.variableString = ''
+            self.termType = 'constant'
+            
         else:
-            if len(other) == 1:
-                other = '1 '
+            self.variableString, self.termType = str(variable), str(variable)
             
-            if len(main) == 1:
-                main = '1 ' 
+        self.stringId = str(coefficient) + str(variable)
         
-            var = float(main[:-1]) + float(other[:-1])
+    def addTerms(self, other):
+        if self.termType == other.termType:
+            finalCoef = str(self.coefficient + other.coefficient)
+            finalVar = self.variableString
             
-            if int(var) == var:
-                var = int(var)
-            
-            return str(var) + oldMain[-1]
+            return finalCoef + finalVar
         
-    def sub(self, main, other, coefs=False, invert=False):
-        oldMain = main
-        if not coefs:
-            return  '' # They cancel out!
-        else: 
-            if len(other) == 1:
-                other = '1 '
+    def subTerms(self, other):
+        if self.termType == other.termType:
+            finalCoef = str(self.coefficient - other.coefficient)
+            finalVar = self.variableString
             
-            if len(main) == 1:
-                main = '1 ' 
-                
-            if not invert:
-                var = float(main[:-1]) - float(other[:-1])
+            return finalCoef + finalVar
+        
+    def divTerms(self, other):
+        if self.termType == other.termType:
+            finalCoef = str(self.coefficient / other.coefficient)
+            finalVar = self.variableString
             
-            else:
-                var = float(other[:-1]) - float(main[:-1])
-                
-            if int(var) == var:
-                var = int(var)
-            
-            return str(var) + oldMain[-1]
+            return finalCoef + finalVar
 
+    def multTerms(self, other):
+        if self.termType == other.termType:
+            finalCoef = str(self.coefficient * other.coefficient)
+            finalVar = self.variableString
             
-    def mult(self, main, other, coefs=False, invert=False):
-        pass
-
-    def div(self, main, other, coefs=False, invert=False):
-        pass
+            return finalCoef + finalVar
+        
+    def getCoef(self):
+        return self.coefficient
+    
+    def getVar(self):
+        return self.variableString
+    
+    def getTermType(self):
+        return self.termType
 
 root = tk.Tk()
 root.title('Calculator')
