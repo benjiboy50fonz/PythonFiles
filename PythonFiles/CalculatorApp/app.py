@@ -297,7 +297,6 @@ class EquationSolver(tk.Frame):
             # Removes white space that the strip() could not clear.
             elif char == ' ':
                 self.equation = self.equation[:(self.equation.index(' '))] + self.equation[(self.equation.index(' ') + 1):]
-                print(self.equation)
                 
             elif char in self.operators:
                 self.cc += 1
@@ -387,35 +386,45 @@ class EquationSolver(tk.Frame):
             termID += 1
                 
         self.combineLikeTerms()
+        
+    def makeFloatsInts(self):
+        for term in self.terms:
+            if int(term.coefficient) == term.coefficient:
+                term.coefficient = int(term.coefficient)
                 
     def getOpBetween(self, term, other):
         goalOne = term.getTermID()
         goalTwo = other.getTermID()
         
+        print(goalOne)
+        print(goalTwo)
+        
         termCount = -1
         same = False
         possibleOpFound = False
-        previous = 'temp'
+        operator = 'temp'
         
         for char in self.equation:
             if char in self.legalAlphabet and not same:
+                print('never')
                 same = True
                 termCount += 1
                 if termCount == goalOne or termCount == goalTwo:
                     if not possibleOpFound:
                         possibleOpFound = True
                     else:
-                        return previous
+                        return operator
             
             try:
                 if math.isfinite(float(char)) and not same:
+                    print('here')
                     same = True
                     termCount += 1
                     if termCount == goalOne or termCount == goalTwo:
                         if not possibleOpFound:
-                            possibleOpFound = True
+                            possibleOpFound = True # Works here
                         else:
-                            return previous
+                            return operator
                         
             except(ValueError):
                 pass
@@ -424,17 +433,19 @@ class EquationSolver(tk.Frame):
                 same = False
                 
             elif char in self.operators and possibleOpFound:
+                operator = char
+                same = False
                 print('I think I found it')
-                
-            previous = char
-            
+                        
         return False # Did not succeed if it went through every character.
     
                 
     def combineLikeTerms(self):
+        
         '''
         We have to be careful with this because we can't just willy-nilly combine like terms; instead, we must find the like terms on each side, then perform valid operations between them.
         '''
+        
         duplicate = self.terms
         for term in self.terms:
             for termTwo in duplicate:
@@ -442,12 +453,34 @@ class EquationSolver(tk.Frame):
                     pass
                 else:
                     if term.equalSignSide == termTwo.equalSignSide and term.termType == termTwo.termType and abs(term.termID - termTwo.termID) == 1: # Term ID is used to find out if the terms are next to each other. Look at constructor for more info.
-                        print(self.getOpBetween(term, termTwo))
+                        
+                        operator = self.getOpBetween(term, termTwo)
+                        
+                        print(operator)
+                        
+                        finalTerm = term.op(termTwo, operator)
+                        
+                        print('t' + str(finalTerm))
+                        print('s ' + str(term.stringId + operator + termTwo.stringId))
+                        newEq = self.equation.replace(term.stringId + operator + termTwo.stringId, finalTerm, 1)
+                        if newEq == self.equation: # If the last one did not change anything, then the variables must need to be reversed. 
+                            print('weee')
+                            newEq = self.equation.replace(termTwo.stringId + operator + term.stringId, finalTerm, 1)
+                
+            
+        print('f ' + str(newEq))
             
 
 class Term:
         
     def __init__(self, coefficient, sideOfSign, termID, variable=None):
+        
+        self.opToFunc = {'+' : self.addTerms,
+                         '-' : self.subTerms,
+                         '*' : self.multTerms,
+                         '/' : self.divTerms,
+                         }
+        
         self.coefficient = coefficient # coefficient can be a constant; just leave the variable argument as default!
         
         self.equalSignSide = sideOfSign # Left is False, and right is True
@@ -463,33 +496,37 @@ class Term:
             
         self.stringId = str(self.coefficient) + str(self.variableString)
         
+    def op(self, otherTerm, operator):
+        return self.opToFunc[str(operator)](otherTerm)
+        
     def getTermID(self):
         return self.termID
         
     def addTerms(self, other):
         if self.termType == other.termType:
-            finalCoef = str(self.coefficient + other.coefficient)
+            print('here2')
+            finalCoef = str(float(self.coefficient) + float(other.coefficient))
             finalVar = self.variableString
-            
+                    
             return finalCoef + finalVar
         
     def subTerms(self, other):
         if self.termType == other.termType:
-            finalCoef = str(self.coefficient - other.coefficient)
+            finalCoef = str(float(self.coefficient) - float(other.coefficient))
             finalVar = self.variableString
             
             return finalCoef + finalVar
         
     def divTerms(self, other):
         if self.termType == other.termType:
-            finalCoef = str(self.coefficient / other.coefficient)
+            finalCoef = str(float(self.coefficient) / float(other.coefficient))
             finalVar = self.variableString
             
             return finalCoef + finalVar
 
     def multTerms(self, other):
         if self.termType == other.termType:
-            finalCoef = str(self.coefficient * other.coefficient)
+            finalCoef = str(float(self.coefficient) * float(other.coefficient))
             finalVar = self.variableString
             
             return finalCoef + finalVar
