@@ -283,6 +283,7 @@ class EquationSolver(tk.Frame):
         self.clearButton.grid(row=1, column=1)
         
     def configureStuff(self):
+        self.cc = 1 # Starts with one for the equal sign
         self.reset()
         eq = str(self.eqEntry.get()).lower()
         
@@ -297,6 +298,9 @@ class EquationSolver(tk.Frame):
             elif char == ' ':
                 self.equation = self.equation[:(self.equation.index(' '))] + self.equation[(self.equation.index(' ') + 1):]
                 print(self.equation)
+                
+            elif char in self.operators:
+                self.cc += 1
                     
         self.buildCustomInputs()
                     
@@ -316,10 +320,12 @@ class EquationSolver(tk.Frame):
         self.resultLabel.grid(row=rowCount + 1, column=0)
         
     def findVarEnd(self, term, startWith=-1):
-        while term[startWith] in self.legalAlphabet:
-            startWith -= 1
-
-        return startWith + 1
+        try:
+            while term[startWith] in self.legalAlphabet:
+                startWith -= 1
+            return startWith + 1
+        except(IndexError):
+            return startWith + 1
         
     def getEntries(self):
         signCount = 0
@@ -380,10 +386,50 @@ class EquationSolver(tk.Frame):
                 
             termID += 1
                 
+        self.combineLikeTerms()
                 
-    def getOpBetween(self, other):
-        pass
+    def getOpBetween(self, term, other):
+        goalOne = term.getTermID()
+        goalTwo = other.getTermID()
+        
+        termCount = -1
+        same = False
+        possibleOpFound = False
+        previous = 'temp'
+        
+        for char in self.equation:
+            if char in self.legalAlphabet and not same:
+                same = True
+                termCount += 1
+                if termCount == goalOne or termCount == goalTwo:
+                    if not possibleOpFound:
+                        possibleOpFound = True
+                    else:
+                        return previous
+            
+            try:
+                if math.isfinite(float(char)) and not same:
+                    same = True
+                    termCount += 1
+                    if termCount == goalOne or termCount == goalTwo:
+                        if not possibleOpFound:
+                            possibleOpFound = True
+                        else:
+                            return previous
+                        
+            except(ValueError):
+                pass
+            
+            if char in self.operators and not possibleOpFound:
+                same = False
                 
+            elif char in self.operators and possibleOpFound:
+                print('I think I found it')
+                
+            previous = char
+            
+        return False # Did not succeed if it went through every character.
+    
                 
     def combineLikeTerms(self):
         '''
@@ -396,11 +442,11 @@ class EquationSolver(tk.Frame):
                     pass
                 else:
                     if term.equalSignSide == termTwo.equalSignSide and term.termType == termTwo.termType and abs(term.termID - termTwo.termID) == 1: # Term ID is used to find out if the terms are next to each other. Look at constructor for more info.
-                        pass
+                        print(self.getOpBetween(term, termTwo))
             
-    
+
 class Term:
-    
+        
     def __init__(self, coefficient, sideOfSign, termID, variable=None):
         self.coefficient = coefficient # coefficient can be a constant; just leave the variable argument as default!
         
@@ -415,7 +461,10 @@ class Term:
         else:
             self.variableString, self.termType = str(variable), str(variable)
             
-        self.stringId = str(coefficient) + str(variable)
+        self.stringId = str(self.coefficient) + str(self.variableString)
+        
+    def getTermID(self):
+        return self.termID
         
     def addTerms(self, other):
         if self.termType == other.termType:
