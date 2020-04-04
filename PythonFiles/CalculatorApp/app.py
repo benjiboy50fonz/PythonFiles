@@ -414,6 +414,8 @@ class EquationSolver(tk.Frame):
         possibleOpFound = False
         operator = 'temp'
         
+        # Seems to work fine now
+        
         for char in self.equation:
             if char in self.legalAlphabet and not same:
                 same = True
