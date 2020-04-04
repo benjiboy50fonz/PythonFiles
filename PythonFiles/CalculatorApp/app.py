@@ -237,9 +237,12 @@ class EquationSolver(tk.Frame):
                               'y',
                               'z']
         
-        self.operators = ['+', '-', '*', '/']
+        self.operators = ['+', '-', '*', '/', '=']
         
         self.equation = ''
+        
+        self.equationTerms = {}
+        
         self.variables = []
         
         self.leftSideTerms = []
@@ -286,7 +289,7 @@ class EquationSolver(tk.Frame):
         self.cc = 1 # Starts with one for the equal sign
         self.reset()
         eq = str(self.eqEntry.get()).lower()
-        
+                
         self.equation = eq
         
         for char in eq:
@@ -339,12 +342,15 @@ class EquationSolver(tk.Frame):
         separatedRight = re.split('[+*/-]', self.equation.split('=')[1])
         
         termID = 0
+        
         for term in separatedLeft:
             gotit = False
             if term[-1] in self.legalAlphabet: # Makes sure its a variable
                 i = self.findVarEnd(term)
                 
                 obj = Term(str(term)[:i], False, termID, str(term)[i:])
+                
+                self.equationTerms[termID] = obj 
                 
                 self.terms.append(obj)
                 self.leftSideTerms.append(obj)
@@ -353,6 +359,8 @@ class EquationSolver(tk.Frame):
             try:
                 if not gotit and math.isfinite(int(term[-1])): # No variable, does not need i because they would all be nums. 3x4 is not a thing, but 34 is lol
                     obj = Term(str(term), False, termID)
+
+                    self.equationTerms[termID] = obj 
                     
                     self.terms.append(obj)
                     self.leftSideTerms.append(obj)
@@ -362,13 +370,16 @@ class EquationSolver(tk.Frame):
                 
             termID += 1
         
-        termID = 0
+        #termID = 0
         for term in separatedRight:
             gotit = False
             if term[-1] in self.legalAlphabet: # Makes sure its a variable
                 i = self.findVarEnd(term)
+                
                 obj = Term(str(term)[:i], True, termID, str(term)[i:])
                     
+                self.equationTerms[str('-' + str(termID))] = obj 
+                
                 self.terms.append(obj)
                 self.rightSideTerms.append(obj)
                 gotit = True
@@ -376,6 +387,8 @@ class EquationSolver(tk.Frame):
             try:
                 if not gotit and math.isfinite(int(term[-1])): # No variable
                     obj = Term(str(term), True, termID)
+                    
+                    self.equationTerms[str('-' + str(termID))] = obj 
                     
                     self.terms.append(obj)
                     self.rightSideTerms.append(obj)
@@ -396,9 +409,6 @@ class EquationSolver(tk.Frame):
         goalOne = term.getTermID()
         goalTwo = other.getTermID()
         
-        print(goalOne)
-        print(goalTwo)
-        
         termCount = -1
         same = False
         possibleOpFound = False
@@ -406,7 +416,6 @@ class EquationSolver(tk.Frame):
         
         for char in self.equation:
             if char in self.legalAlphabet and not same:
-                print('never')
                 same = True
                 termCount += 1
                 if termCount == goalOne or termCount == goalTwo:
@@ -417,7 +426,6 @@ class EquationSolver(tk.Frame):
             
             try:
                 if math.isfinite(float(char)) and not same:
-                    print('here')
                     same = True
                     termCount += 1
                     if termCount == goalOne or termCount == goalTwo:
@@ -425,7 +433,7 @@ class EquationSolver(tk.Frame):
                             possibleOpFound = True # Works here
                         else:
                             return operator
-                        
+                
             except(ValueError):
                 pass
             
@@ -435,7 +443,6 @@ class EquationSolver(tk.Frame):
             elif char in self.operators and possibleOpFound:
                 operator = char
                 same = False
-                print('I think I found it')
                         
         return False # Did not succeed if it went through every character.
     
@@ -446,26 +453,26 @@ class EquationSolver(tk.Frame):
         We have to be careful with this because we can't just willy-nilly combine like terms; instead, we must find the like terms on each side, then perform valid operations between them.
         '''
         
+        newEq = self.equation
+        
         duplicate = self.terms
         for term in self.terms:
             for termTwo in duplicate:
                 if term is termTwo:
                     pass
                 else:
+
                     if term.equalSignSide == termTwo.equalSignSide and term.termType == termTwo.termType and abs(term.termID - termTwo.termID) == 1: # Term ID is used to find out if the terms are next to each other. Look at constructor for more info.
+                        operator = self.getOpBetween(termTwo, term)
                         
-                        operator = self.getOpBetween(term, termTwo)
+                        if term.termID > termTwo.termID:
+                            finalTerm = termTwo.op(term, operator)
+                        else:
+                            finalTerm = term.op(termTwo, operator)
                         
-                        print(operator)
-                        
-                        finalTerm = term.op(termTwo, operator)
-                        
-                        print('t' + str(finalTerm))
-                        print('s ' + str(term.stringId + operator + termTwo.stringId))
-                        newEq = self.equation.replace(term.stringId + operator + termTwo.stringId, finalTerm, 1)
+                        newEq = newEq.replace(term.stringId + operator + termTwo.stringId, finalTerm, 1)
                         if newEq == self.equation: # If the last one did not change anything, then the variables must need to be reversed. 
-                            print('weee')
-                            newEq = self.equation.replace(termTwo.stringId + operator + term.stringId, finalTerm, 1)
+                            newEq = newEq.replace(termTwo.stringId + operator + term.stringId, finalTerm, 1)
                 
             
         print('f ' + str(newEq))
@@ -504,32 +511,39 @@ class Term:
         
     def addTerms(self, other):
         if self.termType == other.termType:
-            print('here2')
-            finalCoef = str(float(self.coefficient) + float(other.coefficient))
+            finalCoef = float(self.coefficient) + float(other.coefficient)
             finalVar = self.variableString
                     
-            return finalCoef + finalVar
+            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                return str(int(finalCoef)) + finalVar
+            return str(finalCoef) + finalVar
         
     def subTerms(self, other):
         if self.termType == other.termType:
-            finalCoef = str(float(self.coefficient) - float(other.coefficient))
+            finalCoef = float(self.coefficient) - float(other.coefficient)
             finalVar = self.variableString
             
-            return finalCoef + finalVar
+            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                return str(int(finalCoef)) + finalVar
+            return str(finalCoef) + finalVar
         
     def divTerms(self, other):
         if self.termType == other.termType:
-            finalCoef = str(float(self.coefficient) / float(other.coefficient))
+            finalCoef = float(self.coefficient) / float(other.coefficient)
             finalVar = self.variableString
             
-            return finalCoef + finalVar
+            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                return str(int(finalCoef)) + finalVar
+            return str(finalCoef) + finalVar
 
     def multTerms(self, other):
         if self.termType == other.termType:
-            finalCoef = str(float(self.coefficient) * float(other.coefficient))
+            finalCoef = float(self.coefficient) * float(other.coefficient)
             finalVar = self.variableString
             
-            return finalCoef + finalVar
+            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                return str(int(finalCoef)) + finalVar
+            return str(finalCoef) + finalVar
         
     def getCoef(self):
         return self.coefficient
