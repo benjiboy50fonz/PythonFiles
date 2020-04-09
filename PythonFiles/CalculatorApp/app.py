@@ -12,19 +12,38 @@ import tkinter as tk
 
 from tkinter import ttk
 
+from functools import partial
+
 class App(tk.Frame):
     def __init__(self, master=None):
         super().__init__(master, width=400, height=700)
         
         self.buttons = {}
+        self.termsAndOps = {}
+        
+        self.termCount = 0 
+        
         self.entryString = ''
         self.recentResult = ''
+        self.currentNumber = ''
+        self.equation = ''
+        
+        self.varKeywords = ['x', 'y', 'z']
+        
+        self.trueOps = ['+', '-', 'x', '/', '(', ')', '='] # Ops we use to declare terms
+        
         self.operators = ['+', '-', 'x', '/', '.', '^', '(', ')']
                 
         self.master = master
         
+        self.currentlyContainingVar = False
+        self.currentMode = True
+        
+        self.master.configure(bg='white')
         self.buildwidgets()
         self.grid()
+        
+        self.ogColor = list(self.buttons.values())[0].cget('bg')
         
     def exit(self):
         self.master.quit()
@@ -42,6 +61,7 @@ class App(tk.Frame):
             
         except(SyntaxError):
             self.recentResult = 'Try Again'
+            
         self.displayResult()
         self.entryString = ''
     
@@ -54,10 +74,10 @@ class App(tk.Frame):
         self.updateLabel()
     
     def gridIt(self):     
-        self.leave.grid(row=7, column=0)
-        self._delete.grid(row=7, column=1)
-        self._clear.grid(row=7, column=2)
-        self.enter.grid(row=7, column=3)
+        self.leave.grid(row=8, column=0)
+        self._delete.grid(row=8, column=1)
+        self._clear.grid(row=8, column=2)
+        self.enter.grid(row=8, column=3)
         
         self.buttons['0'].grid(row=6, column=0)
         self.buttons['.'].grid(row=6, column=1)
@@ -82,8 +102,11 @@ class App(tk.Frame):
         self.buttons['^'].grid(row=2, column=3)
         self.buttons[')'].grid(row=2, column=2)
         self.buttons['('].grid(row=2, column=1)
+
+        self.mode.grid(row=2, column=0)
         
         self.display.grid(row=1, column=0, columnspan=4)
+        
                 
     def buildwidgets(self):
         self.leave = tk.Button(self, text='Quit', width=3, height=1, command=self.exit)
@@ -93,6 +116,8 @@ class App(tk.Frame):
         self._delete = tk.Button(self, text='Delete', width=5, height=2, command=self.delete, fg='red')
                 
         self._clear = tk.Button(self, text='Clear', width=5, height=2, command=self.clear, fg='red')
+        
+        self.mode = tk.Button(self, text='EQSLVR', width=5, height=2, command=self.changeMode, fg='orange')
                 
         self.buttons['Ans'] = tk.Button(self, text='Ans', width=5, height=2, command=self.insertAns, fg='blue')
         
@@ -119,7 +144,41 @@ class App(tk.Frame):
         self.buttonMachine('/')
         self.buttonMachine('^')
         
+        # Variable buttons, shown at specific times.
+        
+        self.Xb = tk.Button(self, text='X', width=5, height=2, command=partial(self.readAndUpdate, 'x'), bg='gray', fg='yellow')
+        self.Yb = tk.Button(self, text='Y', width=5, height=2, command=partial(self.readAndUpdate, 'y'), bg='gray', fg='yellow')
+        self.Zb = tk.Button(self, text='Z', width=5, height=2, command=partial(self.readAndUpdate, 'z'), bg='gray', fg='yellow')
+        self.equalButton = tk.Button(self, text='=', width=5, height=2, command=partial(self.readAndUpdate, '='), bg='gray', fg='yellow')
+        
         self.gridIt()
+        
+    def appendX(self):
+        self.currentNumber += 'x' # Make sure this does not try to multiply
+        self.equation += 'x'
+        self.eqDisplayUpdate()
+        
+    def appendY(self):
+        self.currentNumber += 'y'
+        self.equation += 'y'
+        self.eqDisplayUpdate()
+        
+    def appendZ(self):
+        self.currentNumber += 'z'
+        self.equation += 'z'
+        self.eqDisplayUpdate()
+        
+    def hideVarButtons(self):
+        self.Xb.grid_forget()
+        self.Yb.grid_forget()
+        self.Zb.grid_forget()
+        self.equalButton.grid_forget()
+        
+    def showVarButtons(self):
+        self.Xb.grid(row=7, column=0)
+        self.Yb.grid(row=7, column=1)
+        self.Zb.grid(row=7, column=2)
+        self.equalButton.grid(row=7, column=3)
         
     def buttonMachine(self, name):
         def doYoThang():
@@ -143,6 +202,121 @@ class App(tk.Frame):
         button = tk.Button(self, text=name, width=5, height=2, command=doYoThang, fg=color)
                 
         self.buttons[name] = button
+        
+    def updateEqLabel(self, name, ans):
+        if ans:
+            self.equation += self.recentResult
+        else:
+            self.equation += name
+        
+        self.eqDisplayUpdate()
+        
+    def eqDisplayUpdate(self):
+        self.display.config(text=self.equation)
+        
+    def readAndUpdate(self, name, ans=False):
+        if name in self.trueOps: # Put the number before hand in as a term if it is an actual operator indicating something
+            if self.currentlyContainingVar and len(self.currentNumber) == 1:
+                self.termsAndOps[self.termCount] = Term(1, self.currentNumber[-1]) # One variable, no integers
+            
+            elif self.currentlyContainingVar:
+                self.termsAndOps[self.termCount] = Term(self.currentNumber[:-1], self.currentNumber[-1]) # More than one integers with a variable
+            
+            elif len(self.currentNumber) == 1:
+                self.termsAndOps[self.termCount] = Term(self.currentNumber) # No variable, one integer
+    
+            else:
+                raise Exception('Did not match any sequences: ' + str(name))
+    
+            self.termCount += 1 # Reset the stuff
+            self.currentNumber = ''
+            self.currentlyContainingVar = False
+            
+        elif name in self.varKeywords: # Finds a variable and adds it to the string. Notifies manager that it has a variable.
+            self.currentlyContainingVar = True
+            self.currentNumber += str(name).lower()
+            
+        else: # Must be a number!
+            self.currentNumber += str(name).lower()
+            
+        self.updateEqLabel(name, ans)
+        
+    def solveEq(self):
+        print(self.termsAndOps)
+    
+    def eqClear(self):
+        self.equation = ''
+        self.currentNumber = ''
+        self.currentlyContainingVar = False
+        self.eqDisplayUpdate()
+        
+    def eqDelete(self):
+        self.equation = self.equation[:-1]
+        self.currentNumber = self.currentNumber[:-1]
+        self.eqDisplayUpdate()
+        
+    def changeMode(self):
+        # True = standard 
+        if self.currentMode: # make eq solver 
+            
+            self.master.configure(bg='gray')
+            
+            self.mode.configure(text='NORMAL')
+            
+            self.enter.configure(command=self.solveEq)
+            
+            self._clear.configure(command=self.eqClear)
+            
+            self._delete.configure(command=self.eqDelete)
+            
+            for button in list(self.buttons.items()):
+                if button[0].isdigit():
+                    button[1].configure(bg='gray', fg='orange', command=partial(self.readAndUpdate, button[1].cget('text')))
+                    
+                elif button[0] in self.operators:
+                    button[1].configure(bg='gray', fg='#0dde1b', command=partial(self.readAndUpdate, button[1].cget('text')))
+        
+                elif button[0] == 'Ans':
+                    button[1].configure(bg='gray', fg='#0dde1b', command=partial(self.readAndUpdate, button[1].cget('text'), True))
+            
+            self.showVarButtons()
+            
+        else: # make normal
+        
+            self.master.configure(bg='white')
+            
+            self.mode.configure(text='EQSLVR')
+            
+            self.enter.configure(command=self.calculateBasics)
+            
+            self._clear.configure(command=self.clear)
+            
+            self._delete.configure(command=self.delete)
+            
+            for button in list(self.buttons.items()):
+                def doYoThang(name):
+                    if name == 'x':
+                        name = '*'
+                    elif name == '^':
+                        name = '**'
+                    
+                    self.entryString += name
+                    self.updateLabel()
+                    
+                name = button[1].cget('text')
+
+                if button[0].isdigit():
+                    button[1].configure(bg=self.ogColor, fg='black', command=partial(doYoThang, name))
+                    
+                elif button[0] in self.operators:
+                    button[1].configure(bg=self.ogColor, fg='blue', command=partial(doYoThang, name))
+        
+                elif button[0] == 'Ans':
+                    button[1].configure(bg=self.ogColor, fg='blue', command=self.insertAns)
+                    
+            self.hideVarButtons()
+        
+        self.currentMode = not self.currentMode
         
     def updateLabel(self):
         self.display.config(text=self.entryString)
@@ -204,357 +378,369 @@ class ManualInput(tk.Frame):
     def displayResult(self):
         self.display.config(text=self.recentResult)
         
-class EquationSolver(tk.Frame):
-    def __init__(self, master=None):
-        super().__init__(master)
+class Term:
+    
+    def __init__(self, coef, var=None):
+        self.coef = coef
         
-        self.master = master
-        
-        self.legalAlphabet = ['a',
-                              'b',
-                              'c',
-                              'd',
-                              'e',
-                              'f',
-                              'g',
-                              'h',
-                              'i',
-                              'j',
-                              'k',
-                              'l',
-                              'm',
-                              'n',
-                              'o',
-                              'p',
-                              'q',
-                              'r',
-                              's',
-                              't',
-                              'u',
-                              'v',
-                              'w',
-                              'x',
-                              'y',
-                              'z']
-        
-        self.operators = ['+', '-', '*', '/', '=']
-        
-        self.equation = ''
-        
-        self.equationTerms = {}
-        
-        self.variables = []
-        
-        self.leftSideTerms = []
-        self.rightSideTerms = []
-        self.terms = []
-        
-        self.customLabels = []
-        self.customEntries = []
-        
-        self.varsAndEnties = []
-        
-        self.buildStandardWidgets()
-        
-    def reset(self):
-        self.equation = ''
-        self.variables = []
-        
-        self.customLabels = []
-        self.customEntries = []
-        
-        self.varsAndEnties = []
-        
-    def buildStandardWidgets(self):
-        self.eqEntry = tk.Entry(self, bg='white')
-        
-        self.submitEq = tk.Button(self, text='Enter Equation', fg='blue', command=self.configureStuff)
-        
-        self.submitVars = tk.Button(self, text='Enter Variables', fg='blue', command=self.getEntries)
-        
-        self.resultLabel = tk.Label(self, text='', fg='blue')
-        
-        self.clearButton = tk.Button(self, text='Clear All', fg='red', command=self.reset)
-        
-        self.gridStandards()
-        
-    def gridStandards(self):
-        self.eqEntry.grid(row=1, column=0)
-        
-        self.submitEq.grid(row=2, column=0)
-        
-        self.clearButton.grid(row=1, column=1)
-        
-    def configureStuff(self):
-        self.cc = 1 # Starts with one for the equal sign
-        self.reset()
-        eq = str(self.eqEntry.get()).lower()
-                
-        self.equation = eq
-        
-        for char in eq:
-            if char in self.legalAlphabet:
-                if char not in self.variables:
-                    self.variables.append(char)
-                            
-            # Removes white space that the strip() could not clear.
-            elif char == ' ':
-                self.equation = self.equation[:(self.equation.index(' '))] + self.equation[(self.equation.index(' ') + 1):]
-                
-            elif char in self.operators:
-                self.cc += 1
-                    
-        self.buildCustomInputs()
-                    
-    def buildCustomInputs(self):
-        rowCount = 3
-        for var in self.variables:
-            str_ = var + ' = '
-            self.customLabels.append(tk.Label(self, text=str_, fg='green'))
-            self.customEntries.append(tk.Entry(self, bg='white'))
-                                     
-            self.customLabels[rowCount - 3].grid(row=rowCount, column=0)
-            self.customEntries[rowCount - 3].grid(row=rowCount, column=1)
-            
-            rowCount += 1
-            
-        self.submitVars.grid(row=rowCount, column=0)
-        self.resultLabel.grid(row=rowCount + 1, column=0)
-        
-    def findVarEnd(self, term, startWith=-1):
-        try:
-            while term[startWith] in self.legalAlphabet:
-                startWith -= 1
-            return startWith + 1
-        except(IndexError):
-            return startWith + 1
-        
-    def getEntries(self):
-        signCount = 0
-        for char in self.equation:
-            if char == '=':
-                signCount += 1
-            
-        if signCount > 1:
-            return False
-                
-        separatedLeft = re.split('[+*/-]', self.equation.split('=')[0]) # This was NOT fun.
-        separatedRight = re.split('[+*/-]', self.equation.split('=')[1])
-        
-        termID = 0
-        
-        for term in separatedLeft:
-            gotit = False
-            if term[-1] in self.legalAlphabet: # Makes sure its a variable
-                i = self.findVarEnd(term)
-                
-                obj = Term(str(term)[:i], False, termID, str(term)[i:])
-                
-                self.equationTerms[termID] = obj 
-                
-                self.terms.append(obj)
-                self.leftSideTerms.append(obj)
-                gotit = True
-                
-            try:
-                if not gotit and math.isfinite(int(term[-1])): # No variable, does not need i because they would all be nums. 3x4 is not a thing, but 34 is lol
-                    obj = Term(str(term), False, termID)
+        if var == None:
+            self.termType = 'constant'
+        elif var == 'x' or var == 'y' or var == 'z':
+            self.termType = 'variable'
+        else:
+            raise TypeError
 
-                    self.equationTerms[termID] = obj 
+#class EquationSolver(tk.Frame):
+    #def __init__(self, master=None):
+        #super().__init__(master)
+        
+        #self.master = master
+        
+        #self.legalAlphabet = ['a',
+                              #'b',
+                              #'c',
+                              #'d',
+                              #'e',
+                              #'f',
+                              #'g',
+                              #'h',
+                              #'i',
+                              #'j',
+                              #'k',
+                              #'l',
+                              #'m',
+                              #'n',
+                              #'o',
+                              #'p',
+                              #'q',
+                              #'r',
+                              #'s',
+                              #'t',
+                              #'u',
+                              #'v',
+                              #'w',
+                              #'x',
+                              #'y',
+                              #'z']
+        
+        #self.operators = ['+', '-', '*', '/', '=']
+        
+        #self.equation = ''
+        
+        #self.equationTerms = {}
+        
+        #self.variables = []
+        
+        #self.leftSideTerms = []
+        #self.rightSideTerms = []
+        #self.terms = []
+        
+        #self.customLabels = []
+        #self.customEntries = []
+        
+        #self.varsAndEnties = []
+        
+        #self.buildStandardWidgets()
+        
+    #def reset(self):
+        #self.equation = ''
+        #self.variables = []
+        
+        #self.customLabels = []
+        #self.customEntries = []
+        
+        #self.varsAndEnties = []
+        
+    #def buildStandardWidgets(self):
+        #self.eqEntry = tk.Entry(self, bg='white')
+        
+        #self.submitEq = tk.Button(self, text='Enter Equation', fg='blue', command=self.configureStuff)
+        
+        #self.submitVars = tk.Button(self, text='Enter Variables', fg='blue', command=self.getEntries)
+        
+        #self.resultLabel = tk.Label(self, text='', fg='blue')
+        
+        #self.clearButton = tk.Button(self, text='Clear All', fg='red', command=self.reset)
+        
+        #self.gridStandards()
+        
+    #def gridStandards(self):
+        #self.eqEntry.grid(row=1, column=0)
+        
+        #self.submitEq.grid(row=2, column=0)
+        
+        #self.clearButton.grid(row=1, column=1)
+        
+    #def configureStuff(self):
+        #self.cc = 1 # Starts with one for the equal sign
+        #self.reset()
+        #eq = str(self.eqEntry.get()).lower()
+                
+        #self.equation = eq
+        
+        #for char in eq:
+            #if char in self.legalAlphabet:
+                #if char not in self.variables:
+                    #self.variables.append(char)
+                            
+            ## Removes white space that the strip() could not clear.
+            #elif char == ' ':
+                #self.equation = self.equation[:(self.equation.index(' '))] + self.equation[(self.equation.index(' ') + 1):]
+                
+            #elif char in self.operators:
+                #self.cc += 1
                     
-                    self.terms.append(obj)
-                    self.leftSideTerms.append(obj)
+        #self.buildCustomInputs()
+                    
+    #def buildCustomInputs(self):
+        #rowCount = 3
+        #for var in self.variables:
+            #str_ = var + ' = '
+            #self.customLabels.append(tk.Label(self, text=str_, fg='green'))
+            #self.customEntries.append(tk.Entry(self, bg='white'))
+                                     
+            #self.customLabels[rowCount - 3].grid(row=rowCount, column=0)
+            #self.customEntries[rowCount - 3].grid(row=rowCount, column=1)
+            
+            #rowCount += 1
+            
+        #self.submitVars.grid(row=rowCount, column=0)
+        #self.resultLabel.grid(row=rowCount + 1, column=0)
+        
+    #def findVarEnd(self, term, startWith=-1):
+        #try:
+            #while term[startWith] in self.legalAlphabet:
+                #startWith -= 1
+            #return startWith + 1
+        #except(IndexError):
+            #return startWith + 1
+        
+    #def getEntries(self):
+        #signCount = 0
+        #for char in self.equation:
+            #if char == '=':
+                #signCount += 1
+            
+        #if signCount > 1:
+            #return False
                 
-            except(TypeError):
-                print('Error line 347')
-                
-            termID += 1
+        #separatedLeft = re.split('[+*/-]', self.equation.split('=')[0]) # This was NOT fun.
+        #separatedRight = re.split('[+*/-]', self.equation.split('=')[1])
         
         #termID = 0
-        for term in separatedRight:
-            gotit = False
-            if term[-1] in self.legalAlphabet: # Makes sure its a variable
-                i = self.findVarEnd(term)
+        
+        #for term in separatedLeft:
+            #gotit = False
+            #if term[-1] in self.legalAlphabet: # Makes sure its a variable
+                #i = self.findVarEnd(term)
                 
-                obj = Term(str(term)[:i], True, termID, str(term)[i:])
+                #obj = Term(str(term)[:i], False, termID, str(term)[i:])
+                
+                #self.equationTerms[termID] = obj 
+                
+                #self.terms.append(obj)
+                #self.leftSideTerms.append(obj)
+                #gotit = True
+                
+            #try:
+                #if not gotit and math.isfinite(int(term[-1])): # No variable, does not need i because they would all be nums. 3x4 is not a thing, but 34 is lol
+                    #obj = Term(str(term), False, termID)
+
+                    #self.equationTerms[termID] = obj 
                     
-                self.equationTerms[str('-' + str(termID))] = obj 
+                    #self.terms.append(obj)
+                    #self.leftSideTerms.append(obj)
                 
-                self.terms.append(obj)
-                self.rightSideTerms.append(obj)
-                gotit = True
+            #except(TypeError):
+                #print('Error line 347')
                 
-            try:
-                if not gotit and math.isfinite(int(term[-1])): # No variable
-                    obj = Term(str(term), True, termID)
+            #termID += 1
+        
+        ##termID = 0
+        #for term in separatedRight:
+            #gotit = False
+            #if term[-1] in self.legalAlphabet: # Makes sure its a variable
+                #i = self.findVarEnd(term)
+                
+                #obj = Term(str(term)[:i], True, termID, str(term)[i:])
                     
-                    self.equationTerms[str('-' + str(termID))] = obj 
+                #self.equationTerms[str('-' + str(termID))] = obj 
+                
+                #self.terms.append(obj)
+                #self.rightSideTerms.append(obj)
+                #gotit = True
+                
+            #try:
+                #if not gotit and math.isfinite(int(term[-1])): # No variable
+                    #obj = Term(str(term), True, termID)
                     
-                    self.terms.append(obj)
-                    self.rightSideTerms.append(obj)
+                    #self.equationTerms[str('-' + str(termID))] = obj 
+                    
+                    #self.terms.append(obj)
+                    #self.rightSideTerms.append(obj)
                 
-            except(TypeError):
-                print('Error line 360')
+            #except(TypeError):
+                #print('Error line 360')
                 
-            termID += 1
+            #termID += 1
                 
-        self.combineLikeTerms()
+        #self.combineLikeTerms()
         
-    def makeFloatsInts(self):
-        for term in self.terms:
-            if int(term.coefficient) == term.coefficient:
-                term.coefficient = int(term.coefficient)
+    #def makeFloatsInts(self):
+        #for term in self.terms:
+            #if int(term.coefficient) == term.coefficient:
+                #term.coefficient = int(term.coefficient)
                 
-    def getOpBetween(self, term, other):
-        goalOne = term.getTermID()
-        goalTwo = other.getTermID()
+    #def getOpBetween(self, term, other):
+        #goalOne = term.getTermID()
+        #goalTwo = other.getTermID()
         
-        termCount = -1
-        same = False
-        possibleOpFound = False
-        operator = 'temp'
+        #termCount = -1
+        #same = False
+        #possibleOpFound = False
+        #operator = 'temp'
         
-        # Seems to work fine now
+        ## Seems to work fine now
         
-        for char in self.equation:
-            if char in self.legalAlphabet and not same:
-                same = True
-                termCount += 1
-                if termCount == goalOne or termCount == goalTwo:
-                    if not possibleOpFound:
-                        possibleOpFound = True
-                    else:
-                        return operator
+        #for char in self.equation:
+            #if char in self.legalAlphabet and not same:
+                #same = True
+                #termCount += 1
+                #if termCount == goalOne or termCount == goalTwo:
+                    #if not possibleOpFound:
+                        #possibleOpFound = True
+                    #else:
+                        #return operator
             
-            try:
-                if math.isfinite(float(char)) and not same:
-                    same = True
-                    termCount += 1
-                    if termCount == goalOne or termCount == goalTwo:
-                        if not possibleOpFound:
-                            possibleOpFound = True # Works here
-                        else:
-                            return operator
+            #try:
+                #if math.isfinite(float(char)) and not same:
+                    #same = True
+                    #termCount += 1
+                    #if termCount == goalOne or termCount == goalTwo:
+                        #if not possibleOpFound:
+                            #possibleOpFound = True # Works here
+                        #else:
+                            #return operator
                 
-            except(ValueError):
-                pass
+            #except(ValueError):
+                #pass
             
-            if char in self.operators and not possibleOpFound:
-                same = False
+            #if char in self.operators and not possibleOpFound:
+                #same = False
                 
-            elif char in self.operators and possibleOpFound:
-                operator = char
-                same = False
+            #elif char in self.operators and possibleOpFound:
+                #operator = char
+                #same = False
                         
-        return False # Did not succeed if it went through every character.
+        #return False # Did not succeed if it went through every character.
     
                 
-    def combineLikeTerms(self):
+    #def combineLikeTerms(self):
         
-        '''
-        We have to be careful with this because we can't just willy-nilly combine like terms; instead, we must find the like terms on each side, then perform valid operations between them.
-        '''
+        #'''
+        #We have to be careful with this because we can't just willy-nilly combine like terms; instead, we must find the like terms on each side, then perform valid operations between them.
+        #'''
         
-        newEq = self.equation
+        #newEq = self.equation
         
-        duplicate = self.terms
-        for term in self.terms:
-            for termTwo in duplicate:
-                if term is termTwo:
-                    pass
-                else:
+        #duplicate = self.terms
+        #for term in self.terms:
+            #for termTwo in duplicate:
+                #if term is termTwo:
+                    #pass
+                #else:
 
-                    if term.equalSignSide == termTwo.equalSignSide and term.termType == termTwo.termType and abs(term.termID - termTwo.termID) == 1: # Term ID is used to find out if the terms are next to each other. Look at constructor for more info.
-                        operator = self.getOpBetween(termTwo, term)
+                    #if term.equalSignSide == termTwo.equalSignSide and term.termType == termTwo.termType and abs(term.termID - termTwo.termID) == 1: # Term ID is used to find out if the terms are next to each other. Look at constructor for more info.
+                        #operator = self.getOpBetween(termTwo, term)
                         
-                        if term.termID > termTwo.termID:
-                            finalTerm = termTwo.op(term, operator)
-                        else:
-                            finalTerm = term.op(termTwo, operator)
+                        #if term.termID > termTwo.termID:
+                            #finalTerm = termTwo.op(term, operator)
+                        #else:
+                            #finalTerm = term.op(termTwo, operator)
                         
-                        newEq = newEq.replace(term.stringId + operator + termTwo.stringId, finalTerm, 1)
-                        if newEq == self.equation: # If the last one did not change anything, then the variables must need to be reversed. 
-                            newEq = newEq.replace(termTwo.stringId + operator + term.stringId, finalTerm, 1)
+                        #newEq = newEq.replace(term.stringId + operator + termTwo.stringId, finalTerm, 1)
+                        #if newEq == self.equation: # If the last one did not change anything, then the variables must need to be reversed. 
+                            #newEq = newEq.replace(termTwo.stringId + operator + term.stringId, finalTerm, 1)
                 
             
-        print('f ' + str(newEq))
+        #print('f ' + str(newEq))
             
 
-class Term:
+#class Term:
         
-    def __init__(self, coefficient, sideOfSign, termID, variable=None):
+    #def __init__(self, coefficient, sideOfSign, termID, variable=None):
         
-        self.opToFunc = {'+' : self.addTerms,
-                         '-' : self.subTerms,
-                         '*' : self.multTerms,
-                         '/' : self.divTerms,
-                         }
+        #self.opToFunc = {'+' : self.addTerms,
+                         #'-' : self.subTerms,
+                         #'*' : self.multTerms,
+                         #'/' : self.divTerms,
+                         #}
         
-        self.coefficient = coefficient # coefficient can be a constant; just leave the variable argument as default!
+        #self.coefficient = coefficient # coefficient can be a constant; just leave the variable argument as default!
         
-        self.equalSignSide = sideOfSign # Left is False, and right is True
+        #self.equalSignSide = sideOfSign # Left is False, and right is True
         
-        self.termID = termID # the position of this term, relative to the others on that side, starting at zero.
+        #self.termID = termID # the position of this term, relative to the others on that side, starting at zero.
         
-        if variable is None:
-            self.variableString = ''
-            self.termType = 'constant'
+        #if variable is None:
+            #self.variableString = ''
+            #self.termType = 'constant'
             
-        else:
-            self.variableString, self.termType = str(variable), str(variable)
+        #else:
+            #self.variableString, self.termType = str(variable), str(variable)
             
-        self.stringId = str(self.coefficient) + str(self.variableString)
+        #self.stringId = str(self.coefficient) + str(self.variableString)
         
-    def op(self, otherTerm, operator):
-        return self.opToFunc[str(operator)](otherTerm)
+    #def op(self, otherTerm, operator):
+        #return self.opToFunc[str(operator)](otherTerm)
         
-    def getTermID(self):
-        return self.termID
+    #def getTermID(self):
+        #return self.termID
         
-    def addTerms(self, other):
-        if self.termType == other.termType:
-            finalCoef = float(self.coefficient) + float(other.coefficient)
-            finalVar = self.variableString
+    #def addTerms(self, other):
+        #if self.termType == other.termType:
+            #finalCoef = float(self.coefficient) + float(other.coefficient)
+            #finalVar = self.variableString
                     
-            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
-                return str(int(finalCoef)) + finalVar
-            return str(finalCoef) + finalVar
+            #if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                #return str(int(finalCoef)) + finalVar
+            #return str(finalCoef) + finalVar
         
-    def subTerms(self, other):
-        if self.termType == other.termType:
-            finalCoef = float(self.coefficient) - float(other.coefficient)
-            finalVar = self.variableString
+    #def subTerms(self, other):
+        #if self.termType == other.termType:
+            #finalCoef = float(self.coefficient) - float(other.coefficient)
+            #finalVar = self.variableString
             
-            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
-                return str(int(finalCoef)) + finalVar
-            return str(finalCoef) + finalVar
+            #if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                #return str(int(finalCoef)) + finalVar
+            #return str(finalCoef) + finalVar
         
-    def divTerms(self, other):
-        if self.termType == other.termType:
-            finalCoef = float(self.coefficient) / float(other.coefficient)
-            finalVar = self.variableString
+    #def divTerms(self, other):
+        #if self.termType == other.termType:
+            #finalCoef = float(self.coefficient) / float(other.coefficient)
+            #finalVar = self.variableString
             
-            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
-                return str(int(finalCoef)) + finalVar
-            return str(finalCoef) + finalVar
+            #if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                #return str(int(finalCoef)) + finalVar
+            #return str(finalCoef) + finalVar
 
-    def multTerms(self, other):
-        if self.termType == other.termType:
-            finalCoef = float(self.coefficient) * float(other.coefficient)
-            finalVar = self.variableString
+    #def multTerms(self, other):
+        #if self.termType == other.termType:
+            #finalCoef = float(self.coefficient) * float(other.coefficient)
+            #finalVar = self.variableString
             
-            if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
-                return str(int(finalCoef)) + finalVar
-            return str(finalCoef) + finalVar
+            #if str(self.coefficient).isdigit() and str(other.coefficient).isdigit():
+                #return str(int(finalCoef)) + finalVar
+            #return str(finalCoef) + finalVar
         
-    def getCoef(self):
-        return self.coefficient
+    #def getCoef(self):
+        #return self.coefficient
     
-    def getVar(self):
-        return self.variableString
+    #def getVar(self):
+        #return self.variableString
     
-    def getTermType(self):
-        return self.termType
+    #def getTermType(self):
+        #return self.termType
 
 root = tk.Tk()
 root.title('Calculator')
@@ -563,11 +749,11 @@ tabControl = ttk.Notebook(root) # Establishes tab control
 
 main = App(root)
 manual = ManualInput(root)
-eqSolver = EquationSolver(root)
+#eqSolver = EquationSolver(root)
 
 tabControl.add(main, text='Main')
 tabControl.add(manual, text='Manual')
-tabControl.add(eqSolver, text='Equation Solver')
+#tabControl.add(eqSolver, text='Equation Solver')
 
 tabControl.grid()
 
