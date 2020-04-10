@@ -30,7 +30,7 @@ class App(tk.Frame):
         
         self.varKeywords = ['x', 'y', 'z']
         
-        self.trueOps = ['+', '-', 'x', '/', '(', ')', '='] # Ops we use to declare terms
+        self.trueOps = ['+', '-', '*', '/', '(', ')', '=', '!!'] # Ops we use to declare terms
         
         self.operators = ['+', '-', 'x', '/', '.', '^', '(', ')']
                 
@@ -38,6 +38,7 @@ class App(tk.Frame):
         
         self.currentlyContainingVar = False
         self.currentMode = True
+        self.neg = False
         
         self.master.configure(bg='white')
         self.buildwidgets()
@@ -148,36 +149,21 @@ class App(tk.Frame):
         
         self.Xb = tk.Button(self, text='X', width=5, height=2, command=partial(self.readAndUpdate, 'x'), bg='gray', fg='yellow')
         self.Yb = tk.Button(self, text='Y', width=5, height=2, command=partial(self.readAndUpdate, 'y'), bg='gray', fg='yellow')
-        self.Zb = tk.Button(self, text='Z', width=5, height=2, command=partial(self.readAndUpdate, 'z'), bg='gray', fg='yellow')
         self.equalButton = tk.Button(self, text='=', width=5, height=2, command=partial(self.readAndUpdate, '='), bg='gray', fg='yellow')
+        self.negativeButton = tk.Button(self, text='(-)', width=5, height=2, command=partial(self.readAndUpdate, '_'), bg='gray', fg='yellow')
         
         self.gridIt()
-        
-    def appendX(self):
-        self.currentNumber += 'x' # Make sure this does not try to multiply
-        self.equation += 'x'
-        self.eqDisplayUpdate()
-        
-    def appendY(self):
-        self.currentNumber += 'y'
-        self.equation += 'y'
-        self.eqDisplayUpdate()
-        
-    def appendZ(self):
-        self.currentNumber += 'z'
-        self.equation += 'z'
-        self.eqDisplayUpdate()
         
     def hideVarButtons(self):
         self.Xb.grid_forget()
         self.Yb.grid_forget()
-        self.Zb.grid_forget()
         self.equalButton.grid_forget()
+        self.negativeButton.grid_forget()
         
     def showVarButtons(self):
         self.Xb.grid(row=7, column=0)
         self.Yb.grid(row=7, column=1)
-        self.Zb.grid(row=7, column=2)
+        self.negativeButton.grid(row=7, column=2)
         self.equalButton.grid(row=7, column=3)
         
     def buttonMachine(self, name):
@@ -216,21 +202,31 @@ class App(tk.Frame):
         
     def readAndUpdate(self, name, ans=False):
         if name in self.trueOps: # Put the number before hand in as a term if it is an actual operator indicating something
+            if '_' in self.currentNumber:
+                self.neg = True
+                
+            elif '!!' == name:
+                pass
+                
             if self.currentlyContainingVar and len(self.currentNumber) == 1:
-                self.termsAndOps[self.termCount] = Term(1, self.currentNumber[-1]) # One variable, no integers
+                self.termsAndOps[self.termCount] = Term(1, self.currentNumber[-1], self.neg) # One variable, no integers
             
             elif self.currentlyContainingVar:
-                self.termsAndOps[self.termCount] = Term(self.currentNumber[:-1], self.currentNumber[-1]) # More than one integers with a variable
+                self.termsAndOps[self.termCount] = Term(self.currentNumber[:-1], self.currentNumber[-1], self.neg) # More than one integers with a variable
             
-            elif len(self.currentNumber) == 1:
-                self.termsAndOps[self.termCount] = Term(self.currentNumber) # No variable, one integer
+            elif len(self.currentNumber) >= 1:
+                self.termsAndOps[self.termCount] = Term(self.currentNumber, negative=self.neg) # No variable, one integer
     
             else:
-                raise Exception('Did not match any sequences: ' + str(name))
+                raise Exception('Did not match any sequences: ' + str(name) + ' CN: ' + str(self.currentNumber))
     
             self.termCount += 1 # Reset the stuff
             self.currentNumber = ''
             self.currentlyContainingVar = False
+            self.neg = False
+            
+            self.termsAndOps[self.termCount] = name
+            self.termCount += 1
             
         elif name in self.varKeywords: # Finds a variable and adds it to the string. Notifies manager that it has a variable.
             self.currentlyContainingVar = True
@@ -238,12 +234,71 @@ class App(tk.Frame):
             
         else: # Must be a number!
             self.currentNumber += str(name).lower()
+        
+        if name != '!!':
+            if name == '_':
+                name = '-'
+            self.updateEqLabel(name, ans)
             
-        self.updateEqLabel(name, ans)
+    def combineLikeTerms(self):
+        found = []
+        newEq = ''
+        print(self.termsAndOps)
+        equalSignNum = list(self.termsAndOps.values()).index('=')
+        working = True
+        while working: 
+            try:
+                for item in self.termsAndOps.items():
+                    for otherItem in self.termsAndOps.items():
+                        if item == otherItem:
+                            pass
+                        else:
+                            try:
+                                if item[1].getVar() == otherItem[1].getVar():
+                                    operator = list(self.termsAndOps.values())[max([item[0], otherItem[0]]) - 1]
+                                    id_ = list(self.termsAndOps.keys())[max([item[0], otherItem[0]]) - 1]
+                                    if id_ not in found:
+                                        found.append(id_)
+                                        
+                                    final, varPresent, neg = self.operate(max([item[0], otherItem[0]]), min([item[0], otherItem[0]]), operator)
+                                    if varPresent:
+                                        var = final[-1]
+                                        coef = final[:-1]
+                                    else:
+                                        var = ''
+                                        coef = final
+                                    list(self.termsAndOps.items()).insert(id_, [id_, Term(coef, var, neg)])
+                                    
+                            except(AttributeError):
+                                pass
+                working = False
+            except(RuntimeError):
+                continue
+                    
+        for i in self.termsAndOps.values():
+            if isinstance(i, Term):
+                print(i.value)
+            else:
+                print(i)
+        
+    def operate(self, termTwo, termOne, op):
+        for obj, id_ in zip(list(self.termsAndOps.values()), list(self.termsAndOps.keys())):
+            if id_ == termOne:
+                self.termsAndOps.pop(id_)
+                one = str(obj.getCoefficient())
+                var = str(obj.getVar())
+            elif id_ == termTwo:
+                self.termsAndOps.pop(id_)
+                two = str(obj.getCoefficient())
+        
+        print(one + ' ' + str(op) + ' ' + two)
+        
+        return str(eval(one + str(op) + two)) + var, (not var == ''), ((eval(one + str(op) + two)) < 0)
         
     def solveEq(self):
-        print(self.termsAndOps)
-    
+        self.readAndUpdate('!!')
+        self.combineLikeTerms()
+            
     def eqClear(self):
         self.equation = ''
         self.currentNumber = ''
@@ -274,7 +329,10 @@ class App(tk.Frame):
                     button[1].configure(bg='gray', fg='orange', command=partial(self.readAndUpdate, button[1].cget('text')))
                     
                 elif button[0] in self.operators:
-                    button[1].configure(bg='gray', fg='#0dde1b', command=partial(self.readAndUpdate, button[1].cget('text')))
+                    if button[0] == 'x':
+                        button[1].configure(bg='gray', fg='#0dde1b', command=partial(self.readAndUpdate, '*'))
+                    else:
+                        button[1].configure(bg='gray', fg='#0dde1b', command=partial(self.readAndUpdate, button[1].cget('text')))
         
                 elif button[0] == 'Ans':
                     button[1].configure(bg='gray', fg='#0dde1b', command=partial(self.readAndUpdate, button[1].cget('text'), True))
@@ -296,6 +354,7 @@ class App(tk.Frame):
             for button in list(self.buttons.items()):
                 def doYoThang(name):
                     if name == 'x':
+                        print('here once?')
                         name = '*'
                     elif name == '^':
                         name = '**'
@@ -323,7 +382,35 @@ class App(tk.Frame):
         
     def displayResult(self):
         self.display.config(text=self.recentResult)
+
+class Term:
+    
+    def __init__(self, coef, var='', negative=False):
+        if '_' == coef[0]:
+            coef = '-' + coef[1:]
         
+        self.coef = coef
+        self.var = var
+        self.negative = negative
+        
+        self.value = coef + var
+        
+        if var == '':
+            self.termType = 'constant'
+        elif var == 'x' or var == 'y' or var == 'z':
+            self.termType = 'variable'
+        else:
+            raise TypeError
+    
+    def getTermType(self):
+        return self.termType
+    
+    def getVar(self):
+        return self.var
+    
+    def getCoefficient(self):
+        return self.coef
+
 class ManualInput(tk.Frame):
     
     def __init__(self, master=None):
@@ -378,18 +465,6 @@ class ManualInput(tk.Frame):
     def displayResult(self):
         self.display.config(text=self.recentResult)
         
-class Term:
-    
-    def __init__(self, coef, var=None):
-        self.coef = coef
-        
-        if var == None:
-            self.termType = 'constant'
-        elif var == 'x' or var == 'y' or var == 'z':
-            self.termType = 'variable'
-        else:
-            raise TypeError
-
 #class EquationSolver(tk.Frame):
     #def __init__(self, master=None):
         #super().__init__(master)
