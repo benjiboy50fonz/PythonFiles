@@ -242,58 +242,79 @@ class App(tk.Frame):
             
     def combineLikeTerms(self):
         found = []
-        newEq = ''
+        newEq = self.termsAndOps
+        
+
+        equalSignNum = list(self.termsAndOps.values()).index('=')
+        
+        while self.lookForRemaining():
+            self.termsAndOps = newEq.copy()
+
+            for item in self.termsAndOps.items():
+                for otherItem in self.termsAndOps.items():
+                    if item == otherItem:
+                        continue
+                    else:
+                        try:
+                            if item[1].getVar() == otherItem[1].getVar():
+                                operator = list(newEq.values())[max([item[0], otherItem[0]]) - 1]
+                                id_ = list(newEq.keys())[max([item[0], otherItem[0]]) - 1]
+                                if id_ not in found:
+                                    found.append(id_)
+                                    
+                                new, final, varPresent, neg = self.operate(max([item[0], otherItem[0]]), min([item[0], otherItem[0]]), operator)
+                                
+                                newEq = new # Cleared
+                                
+                                #print(final)
+                                if varPresent:
+                                    var = final[-1]
+                                    coef = final[:-1]
+                                else:
+                                    var = ''
+                                    coef = final
+
+                                list(newEq.items()).insert(int(id_) + 1000, [id_, Term(coef, var, neg)]) # Adding
+                                
+                        except(AttributeError):
+                            pass
+
+        print(self.termsAndOps)
+
+    def lookForRemaining(self):
         print(self.termsAndOps)
         equalSignNum = list(self.termsAndOps.values()).index('=')
-        working = True
-        while working: 
-            try:
-                for item in self.termsAndOps.items():
-                    for otherItem in self.termsAndOps.items():
-                        if item == otherItem:
-                            pass
-                        else:
-                            try:
-                                if item[1].getVar() == otherItem[1].getVar():
-                                    operator = list(self.termsAndOps.values())[max([item[0], otherItem[0]]) - 1]
-                                    id_ = list(self.termsAndOps.keys())[max([item[0], otherItem[0]]) - 1]
-                                    if id_ not in found:
-                                        found.append(id_)
-                                        
-                                    final, varPresent, neg = self.operate(max([item[0], otherItem[0]]), min([item[0], otherItem[0]]), operator)
-                                    if varPresent:
-                                        var = final[-1]
-                                        coef = final[:-1]
-                                    else:
-                                        var = ''
-                                        coef = final
-                                    list(self.termsAndOps.items()).insert(id_, [id_, Term(coef, var, neg)])
-                                    
-                            except(AttributeError):
-                                pass
-                working = False
-            except(RuntimeError):
-                continue
-                    
-        for i in self.termsAndOps.values():
-            if isinstance(i, Term):
-                print(i.value)
-            else:
-                print(i)
+        
+        for term in self.termsAndOps.items():
+            for otherTerm in self.termsAndOps.items():
+                if otherTerm == term:
+                    continue
+                
+                if (term[0] < equalSignNum and otherTerm[0] < equalSignNum) or (term[0] > equalSignNum and otherTerm[0] > equalSignNum):
+                    if isinstance(term[1], Term) and isinstance(otherTerm[1], Term):
+                        try:
+                            if term[1].getVar() == otherTerm[1].getVar():
+                                return True
+                        except(TypeError):
+                            continue
+                
+        return False
         
     def operate(self, termTwo, termOne, op):
-        for obj, id_ in zip(list(self.termsAndOps.values()), list(self.termsAndOps.keys())):
-            if id_ == termOne:
-                self.termsAndOps.pop(id_)
-                one = str(obj.getCoefficient())
-                var = str(obj.getVar())
-            elif id_ == termTwo:
-                self.termsAndOps.pop(id_)
-                two = str(obj.getCoefficient())
+        new = self.termsAndOps.copy()
+        
+        for item in self.termsAndOps.items():
+            if item[0] == termOne:
+                new.pop(item[0])
+                one = str(item[1].getCoefficient())
+                var = str(item[1].getVar())
+            elif item[0] == termTwo:
+                new.pop(item[0])
+                two = str(item[1].getCoefficient())
         
         print(one + ' ' + str(op) + ' ' + two)
         
-        return str(eval(one + str(op) + two)) + var, (not var == ''), ((eval(one + str(op) + two)) < 0)
+        return new, str(eval(one + str(op) + two)) + var, (not var == ''), ((eval(one + str(op) + two)) < 0)
         
     def solveEq(self):
         self.readAndUpdate('!!')
@@ -401,6 +422,9 @@ class Term:
             self.termType = 'variable'
         else:
             raise TypeError
+        
+    def isConstant(self):
+        return (self.termType == 'constant')
     
     def getTermType(self):
         return self.termType
