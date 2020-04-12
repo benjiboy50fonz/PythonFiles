@@ -217,8 +217,8 @@ class App(tk.Frame):
             elif len(self.currentNumber) >= 1:
                 self.termsAndOps[self.termCount] = Term(self.currentNumber, negative=self.neg) # No variable, one integer
     
-            else:
-                raise Exception('Did not match any sequences: ' + str(name) + ' CN: ' + str(self.currentNumber))
+            #else:
+                #raise Exception('Did not match any sequences: ' + str(name) + ' CN: ' + str(self.currentNumber))
     
             self.termCount += 1 # Reset the stuff
             self.currentNumber = ''
@@ -243,12 +243,12 @@ class App(tk.Frame):
     def combineLikeTerms(self):
         found = []
         newEq = self.termsAndOps
-        
 
         equalSignNum = list(self.termsAndOps.values()).index('=')
         
         while self.lookForRemaining():
             self.termsAndOps = newEq.copy()
+            print('loop once!')
 
             for item in self.termsAndOps.items():
                 for otherItem in self.termsAndOps.items():
@@ -256,33 +256,43 @@ class App(tk.Frame):
                         continue
                     else:
                         try:
-                            if item[1].getVar() == otherItem[1].getVar():
+                            if item[1].getVar() == otherItem[1].getVar() and (item[0] < equalSignNum) == (otherItem[0] < equalSignNum): # Second part is good
                                 operator = list(newEq.values())[max([item[0], otherItem[0]]) - 1]
                                 id_ = list(newEq.keys())[max([item[0], otherItem[0]]) - 1]
-                                if id_ not in found:
-                                    found.append(id_)
+                                
+                                idOne = item[0]
+                                
+                                idTwo = otherItem[0]
+                                
+                                if idOne not in found and idTwo not in found:
+                                    print(str(item[1].value) + ' f ' + str(otherItem[1].value)) 
                                     
-                                new, final, varPresent, neg = self.operate(max([item[0], otherItem[0]]), min([item[0], otherItem[0]]), operator)
-                                
-                                newEq = new # Cleared
-                                
-                                #print(final)
-                                if varPresent:
-                                    var = final[-1]
-                                    coef = final[:-1]
-                                else:
-                                    var = ''
-                                    coef = final
+                                    found.append(idOne)
+                                    found.append(idTwo)
+                                    
+                                    new, final, varPresent, neg = self.operate(max([item[0], otherItem[0]]), min([item[0], otherItem[0]]), operator)
+                                    
+                                    newEq = new # Cleared
+                                    
+                                    #print(final)
+                                    if varPresent:
+                                        var = final[-1]
+                                        coef = final[:-1]
+                                    else:
+                                        var = ''
+                                        coef = final
 
-                                list(newEq.items()).insert(int(id_) + 1000, [id_, Term(coef, var, neg)]) # Adding
+                                    newEq[int(id_)] = Term(coef, var, neg) # Adding
                                 
                         except(AttributeError):
                             pass
 
-        print(self.termsAndOps)
+        self.termsAndOps = newEq.copy()
+        #self.resetIDs()
+        print(str(self.termsAndOps) + ' 1' )
+        self.resetIDs()
 
     def lookForRemaining(self):
-        print(self.termsAndOps)
         equalSignNum = list(self.termsAndOps.values()).index('=')
         
         for term in self.termsAndOps.items():
@@ -299,10 +309,77 @@ class App(tk.Frame):
                             continue
                 
         return False
+    
+    def distribute(self):
+        self.resetIDs()
+                
+        for term in self.termsAndOps.items():
+            if term[1] == '(':
+
+                startID = list(self.termsAndOps.keys())[(list(self.termsAndOps.items())).index(term)]
+                
+                endID = None
+                
+                for item in list(self.termsAndOps.items()):
+                    if item[1] == ')' and item[0] > startID:
+                        endID = item[0]
+                
+                if endID is None:
+                    raise Exception('Parenthesis do not end?')
+                
+                distID = None
+                distributed = self.termsAndOps[term[0] - 1]
+                
+                for key in self.termsAndOps.keys():
+                    if self.termsAndOps[key] == distributed:
+                        distID = key
+                        
+                if distID is None:
+                    raise Exception('Could not find ID of distributed')
+                        
+                if not isinstance(distributed, Term):
+                    print('Maybe error line 316. Char behind ( was not Term')
+                
+                newEq = self.termsAndOps.copy()
+                
+                for term in self.termsAndOps.items(): # We need to reset IDs because this next part relies on their organization.
+                    if term[0] > startID and term[0] < endID:
+                        new, res, var, neg = self.operate(distID, term[0], '*')
+                        newEq = new.copy()
+                        print(newEq)
+                        if var:
+                            coef = res[:-1]
+                            var = res[-1]
+                        else:
+                            coef = res
+                            var = ''
+                            
+                        print(term[0])
+                        newEq[term[0]] = Term(coef, var, neg)
         
+                
+                del newEq[startID]
+                del newEq[endID]
+        
+                self.termsAndOps = newEq.copy()
+                
+                
+                
+        #self.resetIDs()
+        print(self.termsAndOps)
+        
+    def resetIDs(self):
+        count = 1
+        new = {}
+        for val in list(self.termsAndOps.values()):
+            new[count] = val
+            count += 1
+            
+        self.termsAndOps = new.copy()
+        del new
+                    
     def operate(self, termTwo, termOne, op):
         new = self.termsAndOps.copy()
-        
         for item in self.termsAndOps.items():
             if item[0] == termOne:
                 new.pop(item[0])
@@ -310,6 +387,7 @@ class App(tk.Frame):
                 var = str(item[1].getVar())
             elif item[0] == termTwo:
                 new.pop(item[0])
+                print(item)
                 two = str(item[1].getCoefficient())
         
         print(one + ' ' + str(op) + ' ' + two)
@@ -318,8 +396,9 @@ class App(tk.Frame):
         
     def solveEq(self):
         self.readAndUpdate('!!')
-        self.combineLikeTerms()
-            
+        #self.combineLikeTerms()
+        self.distribute()
+        
     def eqClear(self):
         self.equation = ''
         self.currentNumber = ''
@@ -328,7 +407,8 @@ class App(tk.Frame):
         
     def eqDelete(self):
         self.equation = self.equation[:-1]
-        self.currentNumber = self.currentNumber[:-1]
+        if self.equation[-1] not in self.trueOps:
+            self.currentNumber = self.currentNumber[:-1]
         self.eqDisplayUpdate()
         
     def changeMode(self):
