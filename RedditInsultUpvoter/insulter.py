@@ -40,4 +40,4 @@ while True:
                     print("Uh oh, gotta wait.") # Posting too fast?
                 
     except(ResponseException):
-        print("401 Error . . . Retrying . . .") # No connection
+        print("Error . . . Retrying . . .") # No connection
