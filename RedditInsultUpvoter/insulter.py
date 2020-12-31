@@ -19,12 +19,25 @@ reddit = praw.Reddit(
 while True:
 
     try:
-        for mention in reddit.inbox.mentions():        
-            parentComment = mention.parent()
-            try:
-                parentComment.reply(generateInsult())
-            except(RedditAPIException):
-                print("Uh oh, gotta wait.")
+        for mention in reddit.inbox.mentions():
+            if mention.new: # Take the new, unread, mentions. 
+                parentComment = mention.parent()
+                try:
+                    swearing = False
+                    insult = generateInsult()
+                    
+                    if "fuck" in insult or "shit" in insult: # Keep it wholesome lol. 
+                        swearing = True
+                        while swearing:
+                            insult = generateInsult()
+                            if "fuck" not in insult and "shit" not in insult:
+                                swearing = False
+                                
+                    parentComment.reply(insult) # Reply to whoever the bot was called upon. 
+                    mention.mark_read()
+                    print("Insulted!")
+                except(RedditAPIException):
+                    print("Uh oh, gotta wait.") # Posting too fast?
                 
     except(ResponseException):
-        print("401 Error . . . Retrying . . .")
+        print("401 Error . . . Retrying . . .") # No connection
